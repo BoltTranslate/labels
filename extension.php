@@ -6,6 +6,11 @@
 
 namespace Labels;
 
+require_once __DIR__ . '/include/Model.php';
+
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+
 class Extension extends \Bolt\BaseExtension
 {
     public function info()
@@ -16,12 +21,12 @@ class Extension extends \Bolt\BaseExtension
             'description' => "This extension allows you to use translatable labels for your site. While it does not allow for fully multilingual sites, you can easily translate labels and short snippets of text to different languages. Usage: {{ l('Click here') }}",
             'author' => "Bob den Otter",
             'link' => "http://twokings.nl",
-            'version' => "0.2",
-            'required_bolt_version' => "0.8.5",
-            'highest_bolt_version' => "1.4.5",
+            'version' => "1.9",
+            'required_bolt_version' => "1.5",
+            'highest_bolt_version' => "1.9",
             'type' => "General",
             'first_releasedate' => "2012-12-12",
-            'latest_releasedate' => "2012-12-12",
+            'latest_releasedate' => "2014-04-24",
             'dependencies' => "",
             'priority' => 10
         );
@@ -30,18 +35,14 @@ class Extension extends \Bolt\BaseExtension
 
     }
 
-    public static function getAvailableLanguageCodes() {
-        return array('en', 'nl', 'de', 'fy', 'fr');
-    }
-
     public function initialize()
     {
+        $this->model = new Model($this->app);
         $this->addTwigFunction('l', 'twigL');
 
-        // TODO: sessions don't get carried over for subdomains.
+        $this->app['integritychecker']->registerExtensionTable(array($this->model, 'getTablesSchema'));
 
         // Set the current language..
-        $languages = self::getAvailableLanguageCodes();
         $lang = null;
 
         if (!empty($_GET['lang'])) {
@@ -55,11 +56,9 @@ class Extension extends \Bolt\BaseExtension
             }
         }
 
-        if (!empty($lang)) {
-            // Only allow whitelisted languages
-            if (in_array($lang, $languages)) {
-                $this->app['session']->set('lang', $lang);
-            }
+        if (!empty($lang) && preg_match('/^[a-z]{2}$/', $lang)) {
+            // Only allow two-letter language codes
+            $this->app['session']->set('lang', $lang);
         }
 
         if (is_null($this->app['session']->get('lang'))) {
@@ -68,21 +67,15 @@ class Extension extends \Bolt\BaseExtension
 
         $this->config['labels']['current'] = $this->app['session']->get('lang');
         $this->app['twig']->addGlobal('lang', $this->config['labels']['current']);
+        $this->currentLanguage = $this->config['labels']['current'];
 
-        // Haal de labels op.
-        $lang = $this->config['labels']['current'];
-        if (in_array($lang, $languages) && preg_match('/^[a-z]*$/', $lang)) {
-            $sql = "SELECT grouping, label, " . $this->config['labels']['current'] . " FROM bolt_labels";
-            $stmt = $this->app['db']->prepare($sql);
-            $stmt->execute();
+        $this->app->get('/bolt/translations', array($this, 'listTranslations'))->bind('translations');
+    }
 
-            while ($row = $stmt->fetch()) {
-                $this->labelscache[ $row['grouping'] . ":" . $row['label'] ] = $row[$this->config['labels']['current']];
-            }
-        }
-
-        // Ugly hack..
-        $GLOBALS['labelscache'] = $this->labelscache;
+    public function listTranslations(Request $request) {
+        $page = intval($request->get('page'));
+        $items = $this->model->getTranslatableItems('nl', $this->currentLanguage, false, $page);
+        return $this->render('translatables.twig', array('items' => $items, 'sourceLanguage' => 'nl', 'destLanguage' => $this->currentLanguage));
     }
 
     /**
@@ -90,34 +83,30 @@ class Extension extends \Bolt\BaseExtension
      */
     public function twigL($label="")
     {
-        // Ugly hack..
-        if (empty($this->labelscache)) {
-            $this->labelscache = $GLOBALS['labelscache'];
+        $labelParts = explode(':', $label);
+        $language = $this->currentLanguage;
+        switch (count($labelParts)) {
+            case 0:
+                return ''; // no label given
+            case 1:
+                $namespace = "";
+                $label = $labelParts[0];
+                break;
+            case 2:
+                list($namespace, $label) = $labelParts;
+                break;
+            default:
+                list($namespace, $label, $language) = $labelParts;
+                break;
         }
 
-        if (strpos($label, ':') !== false) {
-            list($grouping, $label) = explode(":", trim($label));
-        } else {
-            $grouping = "";
-        }
-
-        $orglabel = $label;
-        $label = strtolower(safeString(strip_tags(trim($label))));
-        $grouping = strtolower(safeString($grouping));
-
-        // See if we've retrieved this before..
-        if (!empty($this->labelscache[$grouping.":".$label])) {
-            $res = $this->labelscache[$grouping.":".$label];
-        } elseif (!isset($this->labelscache[$grouping.":".$label])) {
-            // No result. Insert a blank row..
-            $values = array('grouping' => $grouping, 'label' => $label, 'en' => $orglabel, 'nl' => $orglabel, 'de' => $orglabel, 'fr' => $orglabel, 'fy' => $orglabel);
-            $this->app['db']->insert('bolt_labels', $values);
-            $res = $orglabel;
-        } else {
-            // It's present, but
-            $res = $orglabel;
-        }
+        $res = $this->model->getTranslation($namespace, $label, $language);
 
         return new \Twig_Markup($res, 'UTF-8');
+    }
+
+    private function render($template, $data) {
+        $this->app['twig.loader.filesystem']->addPath(dirname(__FILE__) . '/templates');
+        return $this->app['render']->render($template, $data);
     }
 }

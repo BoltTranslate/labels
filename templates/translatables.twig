@@ -1,0 +1,18 @@
+{% include '_header.twig' %}
+
+<table class="dashboardlisting">
+<tr>
+    <th>{{ l('labels-ui:label') }}</th>
+    <th>{{ sourceLanguage }}</th>
+    <th>{{ destLanguage }}</th>
+<tr>
+{% for item in items %}
+<tr>
+    <td>{{ item['label'] }}</td>
+    <td>{{ item['source-translation'] }}</td>
+    <td>{{ item['translation'] }}</td>
+<tr>
+{% endfor %}
+</table>
+
+{% include '_footer.twig' %}
