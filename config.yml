@@ -1,0 +1,5 @@
+# Configuration file for Labels
+
+languages: [ en, nl, de, fy, fr ]
+default: nl
+current: nl
