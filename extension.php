@@ -42,6 +42,8 @@ class Extension extends \Bolt\BaseExtension
 
         $this->app['integritychecker']->registerExtensionTable(array($this->model, 'getTablesSchema'));
 
+        $this->boltPath = $this->app['config']->get('general/branding/path');
+
         // Set the current language..
         $lang = null;
 
@@ -69,13 +71,41 @@ class Extension extends \Bolt\BaseExtension
         $this->app['twig']->addGlobal('lang', $this->config['labels']['current']);
         $this->currentLanguage = $this->config['labels']['current'];
 
-        $this->app->get('/bolt/translations', array($this, 'listTranslations'))->bind('translations');
+        $this->app->get("$this->boltPath/translations", array($this, 'translationsGET'))->bind('translations');
+        $this->app->get("$this->boltPath/translations/list", array($this, 'listTranslations'))->bind('list_translations');
+        $this->app->get("$this->boltPath/translations/csv", array($this, 'csvExportGET'))->bind('translations_csv_export');
+        $this->app->post("$this->boltPath/translations/csv", array($this, 'csvImportPOST'))->bind('translations_csv_import');
+
     }
 
     public function listTranslations(Request $request) {
+        $this->requireUserPermission('labels');
         $page = intval($request->get('page'));
         $items = $this->model->getTranslatableItems('nl', $this->currentLanguage, false, $page);
         return $this->render('translatables.twig', array('items' => $items, 'sourceLanguage' => 'nl', 'destLanguage' => $this->currentLanguage));
+    }
+
+    public function translationsGET(Request $request) {
+        $this->requireUserPermission('labels');
+        return $this->render('import_form.twig', array());
+    }
+
+    public function csvExportGET(Request $request) {
+        $this->requireUserPermission('labels');
+        $csv = $this->model->getExportableItems();
+        $headers = array('Content-Type' => 'text/csv');
+        $response = Response::create($csv, 200, $headers);
+        return $response;
+    }
+
+    public function csvImportPOST(Request $request) {
+        $this->requireUserPermission('labels');
+        $csvFilename = $_FILES['csv_file']['tmp_name'];
+        $csvFile = fopen($csvFilename, 'r');
+        $count = $this->model->importCSV($csvFile);
+        fclose($csvFile);
+        $this->app['session']->getFlashBag()->set('success', __("Imported %count% translations", array('%count%' => $count)));
+        return redirect('translations');
     }
 
     /**
@@ -107,6 +137,7 @@ class Extension extends \Bolt\BaseExtension
 
     private function render($template, $data) {
         $this->app['twig.loader.filesystem']->addPath(dirname(__FILE__) . '/templates');
+        $data['base_path'] = $this->boltPath . '/translations';
         return $this->app['render']->render($template, $data);
     }
 }

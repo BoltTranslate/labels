@@ -63,20 +63,19 @@ class Model {
             "    WHERE l.namespace = :namespace AND l.label = :label " .
             "    LIMIT 1 ";
         $params = array(
-            'namespace' => $namespace,
-            'label' => $label,
-            'language' => $language
-            );
+                'namespace' => $namespace,
+                'label' => $label,
+                'language' => $language
+                );
         $row = $db->fetchAssoc($query, $params);
         if (!is_array($row) || !isset($row['label_id'])) {
             // Label record does not exist
             $labelRow = array(
-                'namespace' => $namespace,
-                'label' => $label);
+                    'namespace' => $namespace,
+                    'label' => $label);
             $db->insert($this->prefix . 'labels', $labelRow);
             $label_id = $db->lastInsertId();
-            var_dump($label_id);
-            return array('translation' => $label, 'label_id' => $label_id);
+            return array('translation' => $label, 'label_id' => $label_id, 'language' => $language);
         }
         else {
             return $row;
@@ -105,17 +104,24 @@ class Model {
         $db = $this->app['db'];
 
         $labelRow = $this->_getTranslationInternal($namespace, $label, $language);
+
+        if ($labelRow['translation'] == $translation) {
+            return 0; // already the same, no need to hit the DB again.
+        }
         $labelRow['translation'] = $translation;
+        $labelRow['language'] = $language;
 
         if (is_null($labelRow['id'])) {
             unset($labelRow['id']);
-            $db->insert($this->prefix . 'labels', $labelRow);
+            $db->insert($this->prefix . 'translations', $labelRow);
         }
         else {
             $id = $labelRow['id'];
             unset($labelRow['id']);
-            $db->update($this->prefix . 'labels', $labelRow, $id);
+            $ident = array('id' => $id);
+            $db->update($this->prefix . 'translations', $labelRow, $ident);
         }
+        return 1;
     }
 
     public function getTranslatableItems($sourceLanguage, $destLanguage, $untranslatedOnly = false, $pageIndex = 0, $pageSize = 10) {
@@ -136,6 +142,72 @@ class Model {
             'offset' => $pageSize * $pageIndex,
             'page_size' => $pageSize);
         return $db->fetchAll($query, $params);
+    }
+
+    public function importCSV($handle) {
+        $header = fgetcsv($handle);
+        $languages = array_slice($header, 2);
+        $count = 0;
+
+        while (!feof($handle)) {
+            $row = fgetcsv($handle);
+            if (!is_array($row)) {
+                continue;
+            }
+            $namespace = array_shift($row);
+            $label = array_shift($row);
+            foreach ($languages as $language) {
+                $translation = array_shift($row);
+                if (!empty($translation)) {
+                    $count += $this->saveTranslation($namespace, $label, $language, $translation);
+                }
+            }
+        }
+        return $count;
+    }
+
+    public function getExportableItems() {
+        $db = $this->app['db'];
+        $query =
+            " SELECT l.namespace, l.label, t.language, t.translation " .
+            " FROM {$this->prefix}labels l " .
+            " LEFT JOIN {$this->prefix}translations t " .
+            "     ON t.label_id = l.id " .
+            " ORDER BY l.namespace, l.label, t.language ";
+        $stmt = $db->executeQuery($query);
+        $data = array();
+        $languages = array('en' => 'en');
+        while ($row = $stmt->fetch()) {
+            $language = $row['language'];
+            if (is_null($language)) {
+                $language = 'en';
+            }
+            $key = $row['namespace'] . ':' . $row['label'];
+            $data[$key][$language] = $data['translation'];
+            $languages[$language] = $language;
+        }
+        $csvFile = fopen('php://temp', 'rw');
+        $csvRow = array('namespace', 'label') + $languages;
+        fputcsv($csvFile, $csvRow);
+        foreach ($data as $key => $translations) {
+            $csvRow = explode(':', $key);
+            foreach ($languages as $language) {
+                if (isset($translations[$language])) {
+                    $csvRow[] = $translations[$language];
+                }
+                else {
+                    $csvRow[] = '';
+                }
+            }
+            fputcsv($csvFile, $csvRow);
+        }
+        rewind($csvFile);
+        $csv = '';
+        while (!feof($csvFile)) {
+            $csv .= fread($csvFile, 1024);
+        }
+        fclose($csvFile);
+        return $csv;
     }
 
 };
