@@ -71,6 +71,8 @@ class Extension extends \Bolt\BaseExtension
         $this->app['twig']->addGlobal('lang', $this->config['labels']['current']);
         $this->currentLanguage = $this->config['labels']['current'];
 
+        $this->addMenuOption(__('Labels'), "$this->boltPath/translations", "icon-flag");
+
         $this->app->get("$this->boltPath/translations", array($this, 'translationsGET'))->bind('translations');
         $this->app->get("$this->boltPath/translations/list", array($this, 'listTranslations'))->bind('list_translations');
         $this->app->get("$this->boltPath/translations/csv", array($this, 'csvExportGET'))->bind('translations_csv_export');
