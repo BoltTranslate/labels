@@ -183,7 +183,7 @@ class Model {
                 $language = 'en';
             }
             $key = $row['namespace'] . ':' . $row['label'];
-            $data[$key][$language] = $data['translation'];
+            $data[$key][$language] = $row['translation'];
             $languages[$language] = $language;
         }
         $csvFile = fopen('php://temp', 'rw');
