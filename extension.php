@@ -39,6 +39,7 @@ class Extension extends \Bolt\BaseExtension
     {
         $this->model = new Model($this->app);
         $this->addTwigFunction('l', 'twigL');
+        $this->addTwigFunction('setLanguage', 'twigSetLanguage');
 
         $this->app['integritychecker']->registerExtensionTable(array($this->model, 'getTablesSchema'));
 
@@ -52,14 +53,13 @@ class Extension extends \Bolt\BaseExtension
             $lang = trim(strtolower($_GET['lang']));
         }
         elseif (isset($_SERVER['HTTP_HOST'])) {
-            if (preg_match('/^([a-z]{2})\./', $_SERVER['HTTP_HOST'], $matches)) {
+            if ($extracted = $this->extractLanguage($_SERVER['HTTP_HOST'])) {
                 // We're on a language-specific domain
-                $lang = $matches[1];
+                $lang = $extracted;
             }
         }
 
-        if (!empty($lang) && preg_match('/^[a-z]{2}$/', $lang)) {
-            // Only allow two-letter language codes
+        if (!empty($lang) && $this->isValidLanguage($lang)) {
             $this->app['session']->set('lang', $lang);
         }
 
@@ -68,8 +68,7 @@ class Extension extends \Bolt\BaseExtension
         }
 
         $this->config['labels']['current'] = $this->app['session']->get('lang');
-        $this->app['twig']->addGlobal('lang', $this->config['labels']['current']);
-        $this->currentLanguage = $this->config['labels']['current'];
+        $this->setCurrentLanguage($this->config['labels']['current']);
 
         $this->addMenuOption(__('Labels'), "$this->boltPath/translations", "icon-flag");
 
@@ -78,6 +77,46 @@ class Extension extends \Bolt\BaseExtension
         $this->app->get("$this->boltPath/translations/csv", array($this, 'csvExportGET'))->bind('translations_csv_export');
         $this->app->post("$this->boltPath/translations/csv", array($this, 'csvImportPOST'))->bind('translations_csv_import');
 
+    }
+
+    public function extractLanguage($lang)
+    {
+        if (preg_match('/^([a-z]{2})\./', $lang, $matches)) {
+            return $matches[1];
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * Validate a two-letter language code.
+     */
+    public function isValidLanguage($lang) {
+        return preg_match('/^[a-z]{2}$/', $lang);
+    }
+
+    public function setCurrentLanguage($lang)
+    {
+        if ($this->isValidLanguage($lang)) {
+            // Note: we're not changing the session value here, because we
+            // don't want to persist this language override across requests.
+            //
+            // We're using the Twig global 'lang' as our source of truth, this
+            // way we can change the current language from within a template by
+            // setting the lang variable.
+            $this->app['twig']->addGlobal('lang', $lang);
+        }
+    }
+
+    public function getCurrentLanguage() {
+        $twigGlobals = $this->app['twig']->getGlobals();
+        if (isset($twigGlobals['lang'])) {
+            return $twigGlobals['lang'];
+        }
+        else {
+            return null;
+        }
     }
 
     public function listTranslations(Request $request) {
@@ -112,6 +151,11 @@ class Extension extends \Bolt\BaseExtension
 
     /**
      * Twig function {{ l() }} in Labels extension.
+     * Input can be in one of the following forms::
+     *     "foo" -> namespace = '', key = 'foo', language = <default>
+     *     "bar:foo" -> namespace = 'bar', key = 'foo', language = <default>
+     *     "bar:foo:nl" -> namespace = 'bar', key = 'foo', language = 'nl'
+     *     ":foo:nl" -> namespace = '', key = 'foo', language = 'nl'
      */
     public function twigL($label="")
     {
@@ -135,6 +179,18 @@ class Extension extends \Bolt\BaseExtension
         $res = $this->model->getTranslation($namespace, $label, $language);
 
         return new \Twig_Markup($res, 'UTF-8');
+    }
+
+    public function twigSetLanguage($lang) {
+        $this->setCurrentLanguage($lang);
+        return '';
+    }
+
+    public function __get($name) {
+        switch ($name) {
+            case 'currentLanguage':
+                return $this->getCurrentLanguage();
+        }
     }
 
     private function render($template, $data) {
