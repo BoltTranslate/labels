@@ -1,6 +1,6 @@
 <?php
 
-namespace Labels;
+namespace Bolt\Extension\Bolt\Labels;
 
 use \Silex\Application;
 use \Symfony\Component\HttpFoundation\Request;

@@ -1,0 +1,26 @@
+{
+    "name": "bolt/maps",
+    "description": "Database-backed translation labels",
+    "type": "bolt-extension",
+    "require": {
+        "bolt/bolt": ">=2.0.0,<3.0.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {"name": "Two Kings", "email": "info@twokings.nl"},
+        {"name": "Bob den Otter", "email": "bob@twokings.nl"},
+        {"name": "Tobias Dammers", "email": "tdammers@twokings.nl"}
+    ],
+    "autoload": {
+        "files": [
+            "init.php"
+        ],
+        "psr-4": {
+            "Bolt\\Extension\\Bolt\\Labels\\": ""
+        }
+    },
+
+    "extra": {
+        "bolt-assets": "assets"
+    }
+}

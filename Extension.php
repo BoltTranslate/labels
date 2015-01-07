@@ -4,35 +4,24 @@
  * @author Bob den Otter <bob@twokings.nl>
  */
 
-namespace Labels;
+namespace Bolt\Extension\Bolt\Labels;
 
 require_once __DIR__ . '/include/Model.php';
 
+use Bolt\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class Extension extends \Bolt\BaseExtension
 {
-    public function info()
+    public function __construct(Application $app)
     {
+        parent::__construct($app);
+    }
 
-        $data = array(
-            'name' => "Labels",
-            'description' => "This extension allows you to use translatable labels for your site. While it does not allow for fully multilingual sites, you can easily translate labels and short snippets of text to different languages. Usage: {{ l('Click here') }}",
-            'author' => "Bob den Otter",
-            'link' => "http://twokings.nl",
-            'version' => "1.9",
-            'required_bolt_version' => "1.5",
-            'highest_bolt_version' => "1.9",
-            'type' => "General",
-            'first_releasedate' => "2012-12-12",
-            'latest_releasedate' => "2014-04-24",
-            'dependencies' => "",
-            'priority' => 10
-        );
-
-        return $data;
-
+    public function getName()
+    {
+        return "labels";
     }
 
     public function initialize()
