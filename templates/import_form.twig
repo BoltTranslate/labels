@@ -1,5 +1,3 @@
-{# {% include '_header.twig' %} #}
-
 {% extends '_base/_page-nav.twig' %}
 
 {% block page_nav 'Labels' %}
@@ -8,17 +6,29 @@
 
 {% block page_main %}
 <form action="{{base_path}}/csv" method="POST" enctype="multipart/form-data">
-    <h2>{{ l("labels-ui:CSV") }}</h2>
-    <label>
-    {{ l("labels-ui:Upload CSV File") }} 
-    <input type="file" name="csv_file"/>
-    <input type="submit" value="{{l("labels-ui:Upload")}}" />
+    <h1>{{ l("labels-ui:CSV") }}</h1>
+    <label for="csv_file">{{ l("labels-ui:Upload CSV File") }}</label>
+    <input class="btn btn-secondary" type="file" name="csv_file" data-filename-placement="inside" title="CSV file..."/>
+    <button class="btn btn-primary" disabled="disabled" type="submit">{{l("labels-ui:Upload")}}</button>
 </form>
 
+<h2>{{ l("labels-ui:Download") }}</h2>
 <div>
-    <a href="{{base_path}}/csv">{{ l("labels-ui:Download CSV") }}</a>
+    <a class="btn btn-secondary" href="{{base_path}}/csv">{{ l("labels-ui:Download CSV") }}</a>
 </div>
 
-{% endblock page_main %}
+<script type="text/javascript">
+    $(function() {
+        $('input[type=file]').bootstrapFileInput();
 
-{# {% include '_footer.twig' %} #}
+        $('input:file').change(
+            function(){
+                if ($(this).val()) {
+                    $('button:submit').removeAttr('disabled'); 
+                } 
+            }
+        );
+
+    });
+</script>
+{% endblock page_main %}

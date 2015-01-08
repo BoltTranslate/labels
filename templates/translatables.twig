@@ -1,4 +1,10 @@
-{% include '_header.twig' %}
+{% extends '_base/_page-nav.twig' %}
+
+{% block page_nav 'Labels' %}
+
+{% block page_title __('page.labels-listing.title') %}
+
+{% block page_main %}
 
 <table class="dashboardlisting">
 <tr>
@@ -14,5 +20,4 @@
 <tr>
 {% endfor %}
 </table>
-
-{% include '_footer.twig' %}
+{% endblock page_main %}
