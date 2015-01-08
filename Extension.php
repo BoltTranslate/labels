@@ -9,6 +9,8 @@ namespace Bolt\Extension\Bolt\Labels;
 require_once __DIR__ . '/include/Model.php';
 
 use Bolt\Application;
+use Bolt\Translation\Translator as Trans;
+use Bolt\Library as Lib;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -59,7 +61,7 @@ class Extension extends \Bolt\BaseExtension
         $this->config['labels']['current'] = $this->app['session']->get('lang');
         $this->setCurrentLanguage($this->config['labels']['current']);
 
-        $this->addMenuOption(__('Labels'), "$this->boltPath/translations", "icon-flag");
+        $this->addMenuOption(Trans::__('Labels'), "$this->boltPath/translations", "icon-flag");
 
         $this->app->get("$this->boltPath/translations", array($this, 'translationsGET'))->bind('translations');
         $this->app->get("$this->boltPath/translations/list", array($this, 'listTranslations'))->bind('list_translations');
@@ -134,8 +136,8 @@ class Extension extends \Bolt\BaseExtension
         $csvFile = fopen($csvFilename, 'r');
         $count = $this->model->importCSV($csvFile);
         fclose($csvFile);
-        $this->app['session']->getFlashBag()->set('success', __("Imported %count% translations", array('%count%' => $count)));
-        return redirect('translations');
+        $this->app['session']->getFlashBag()->set('success', Trans::__("Imported %count% translations", array('%count%' => $count)));
+        return Lib::redirect('translations');
     }
 
     /**
