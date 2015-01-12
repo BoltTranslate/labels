@@ -1,5 +1,5 @@
 {
-    "name": "bolt/maps",
+    "name": "bolt/labels",
     "description": "Database-backed translation labels",
     "type": "bolt-extension",
     "require": {
