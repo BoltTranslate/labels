@@ -65,7 +65,7 @@ class Extension extends \Bolt\BaseExtension
 
         $this->app->get("$this->boltPath/labels", array($this, 'translationsGET'))->bind('labels');
         $this->app->get("$this->boltPath/labels/list", array($this, 'listTranslations'))->bind('list_labels');
-        $this->app->get("$this->boltPath/labels/csv", array($this, 'csvExportGET'))->bind('export_labels');
+        $this->app->get("$this->boltPath/labels/save", array($this, 'saveLabels'))->bind('save_labels');
         $this->app->post("$this->boltPath/labels/csv", array($this, 'csvImportPOST'))->bind('import_labels');
 
     }
@@ -120,7 +120,11 @@ class Extension extends \Bolt\BaseExtension
     public function translationsGET(Request $request) {
         $this->requireUserPermission('labels');
 
-        return $this->render('import_form.twig', array());
+        $twigvars = [
+            'columns' => array_merge([ 'Label'], $this->config['languages'])
+        ];
+
+        return $this->render('import_form.twig', $twigvars);
 
     }
 
@@ -188,7 +192,13 @@ class Extension extends \Bolt\BaseExtension
 
     private function render($template, $data) {
         $this->app['twig.loader.filesystem']->addPath(dirname(__FILE__) . '/templates');
-        $data['base_path'] = $this->boltPath . '/translations';
+
+        if ($this->app['config']->getWhichEnd()=='backend') {
+            $this->addCss('assets/handsontable.full.min.css');
+            $this->addJavascript('assets/handsontable.full.min.js', true);
+            $this->addJavascript('assets/start.js', true);
+        }
+
         return $this->app['render']->render($template, $data);
     }
 }

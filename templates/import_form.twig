@@ -1,10 +1,88 @@
 {% extends '_base/_page-nav.twig' %}
 
+{#=== Options ============================================================================#}
+
+{% if context.content.get(key) is empty or context.content.get(key) is not json %}
+    {% set currentvalue = '[[]]' %}
+{% else %}
+    {% set currentvalue = context.content.get(key) %}
+{% endif %}
+
+{% set minimumcolumns = max(field.columns|length, field.minimumcolumns, 5) %}
+
+{#=== FIELDSET ============================================================================#}
+
+
 {% block page_nav 'Labels' %}
 
 {% block page_title __('Edit labels') %}
 
 {% block page_main %}
+
+{{ dump(currentvalue) }}
+
+{{ dump(columns) }}
+
+<form action="{{base_path}}/labels/save" method="POST" enctype="multipart/form-data">
+
+    <fieldset class="colourpicker">
+        <div class="col-sm-12">
+            <div>
+                <label class="control-label">{{field.label|default(key)}}</label>
+            </div>
+
+    <div id="hot-{{key}}" style='width: 100%; border-right: 1px solid #DDD; border-bottom: 1px solid #DDD; background-color: #F8F8F8;z-index: 1;'></div>
+
+        <input type="text" name="columns" value="{{ columns|json_encode }}" style='width: 100%;'>
+            <input type="text" name="labels" id="gridfield-labels" value="{{ currentvalue }}" style='width: 100%;'>
+        </div>
+    </fieldset>
+
+    <button class="btn btn-primary" disabled="disabled" id="save-button" type="submit">
+        <i class='fa fa-save'></i> Save
+    </button>
+
+</form>
+
+
+<script>
+jQuery(document).ready(function($) {
+
+  var data = {{ currentvalue|raw }};
+
+  var container = document.getElementById('hot-{{key}}');
+  var hot = new Handsontable(container,
+    {
+        autoColumnSize: true,
+        minSpareRows: 1,
+        width: '100%',
+        height: {{ field.height|default(100) }},
+        minCols: {{ columns|length }},
+        data: data,
+        colHeaders: [ '{{ columns|join("', '")|raw }}' ],
+        columnSorting: true,
+        sortIndicator: true,
+        rowHeaders: false,
+        manualRowMove: true,
+        contextMenu: true,
+        manualColumnResize: true,
+        afterRender: updateData,
+        afterColumnSort: updateData,
+        afterRowMove: updateData
+    });
+    function updateData(changes, source) {
+        if(hot){
+            var data = this.getData(0, 0, hot.countRows() - 1, hot.countCols() - 1); // Because #989
+            data = data.filter(function(row) {
+                return !_.isEmpty(_.without(row, null));
+            });
+            jQuery('#gridfield-labels').val(JSON.stringify(data));
+            $('#save-button').removeAttr('disabled');
+        }
+    }
+
+});
+</script>
 
     {#
 <form action="{{base_path}}/csv" method="POST" enctype="multipart/form-data">
