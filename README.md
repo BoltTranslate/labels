@@ -10,6 +10,11 @@ can modify and mange the translations:
 
 ![screen shot 2015-10-22 at 15 06 15](https://cloud.githubusercontent.com/assets/1833361/10665901/8cb062aa-78ce-11e5-8742-5b1a2e142b6a.png)
 
+If you go to that page, you'll be able to manage the translations in a spreadsheet-like grid:
+
+![screen shot 2015-10-22 at 15 06 31](https://cloud.githubusercontent.com/assets/1833361/10665902/8cb2345e-78ce-11e5-9203-031146dc0976.png)
+
+
 Configuration
 -------------
 The configuration file is pretty self-explanatory. If you're upgrading from a previous version of this extension, please read the `config.yml.dist` file, to see what's been changed.
