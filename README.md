@@ -19,7 +19,7 @@ Configuration
 -------------
 The configuration file is pretty self-explanatory. If you're upgrading from a previous version of this extension, please read the `config.yml.dist` file, to see what's been changed.
 
-**options**
+**Options:**
 
  - `languages`: The array of supported languages. It's advisable to stick to
    two-letter language codes.
