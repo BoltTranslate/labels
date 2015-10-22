@@ -32,7 +32,7 @@ class Extension extends \Bolt\BaseExtension
         $this->addTwigFunction('l', 'twigL');
         $this->addTwigFunction('setLanguage', 'twigSetLanguage');
 
-        $this->app['integritychecker']->registerExtensionTable(array($this->model, 'getTablesSchema'));
+        // $this->app['integritychecker']->registerExtensionTable(array($this->model, 'getTablesSchema'));
 
         $this->boltPath = $this->app['config']->get('general/branding/path');
 
@@ -61,12 +61,12 @@ class Extension extends \Bolt\BaseExtension
         $this->config['labels']['current'] = $this->app['session']->get('lang');
         $this->setCurrentLanguage($this->config['labels']['current']);
 
-        $this->addMenuOption(Trans::__('Labels'), "$this->boltPath/translations", "icon-flag");
+        $this->addMenuOption(Trans::__('Labels'), "$this->boltPath/labels", "icon-flag");
 
-        $this->app->get("$this->boltPath/translations", array($this, 'translationsGET'))->bind('translations');
-        $this->app->get("$this->boltPath/translations/list", array($this, 'listTranslations'))->bind('list_translations');
-        $this->app->get("$this->boltPath/translations/csv", array($this, 'csvExportGET'))->bind('translations_csv_export');
-        $this->app->post("$this->boltPath/translations/csv", array($this, 'csvImportPOST'))->bind('translations_csv_import');
+        $this->app->get("$this->boltPath/labels", array($this, 'translationsGET'))->bind('labels');
+        $this->app->get("$this->boltPath/labels/list", array($this, 'listTranslations'))->bind('list_labels');
+        $this->app->get("$this->boltPath/labels/csv", array($this, 'csvExportGET'))->bind('export_labels');
+        $this->app->post("$this->boltPath/labels/csv", array($this, 'csvImportPOST'))->bind('import_labels');
 
     }
 
@@ -119,7 +119,9 @@ class Extension extends \Bolt\BaseExtension
 
     public function translationsGET(Request $request) {
         $this->requireUserPermission('labels');
+
         return $this->render('import_form.twig', array());
+
     }
 
     public function csvExportGET(Request $request) {

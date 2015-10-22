@@ -2,9 +2,11 @@
 
 {% block page_nav 'Labels' %}
 
-{% block page_title __('page.labels.title') %}
+{% block page_title __('Edit labels') %}
 
 {% block page_main %}
+
+    {#
 <form action="{{base_path}}/csv" method="POST" enctype="multipart/form-data">
     <h1>{{ l("labels-ui:CSV") }}</h1>
     <label for="csv_file">{{ l("labels-ui:Upload CSV File") }}</label>
@@ -24,11 +26,14 @@
         $('input:file').change(
             function(){
                 if ($(this).val()) {
-                    $('button:submit').removeAttr('disabled'); 
-                } 
+                    $('button:submit').removeAttr('disabled');
+                }
             }
         );
 
     });
-</script>
+</script> #}
+
+
+
 {% endblock page_main %}
