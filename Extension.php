@@ -139,20 +139,19 @@ class Extension extends \Bolt\BaseExtension
             $this->loadLabels();
         }
 
-        dump($this->labels);
+        // dump($this->labels);
 
         $languages = $this->config['languages'];
 
         $data = [];
 
-        foreach($data as $label => $row) {
+        foreach($this->labels as $label => $row) {
             $values = [];
             foreach($languages as $l) {
                 $values[] = $row[$l] ?: '';
             }
-            $data[$label] = $values;
+            $data[] = array_merge([$label], $values);
         }
-
 
         $twigvars = [
             'columns' => array_merge([ 'Label'], $languages),
@@ -172,9 +171,6 @@ class Extension extends \Bolt\BaseExtension
         // remove the label.
         array_shift($columns);
 
-        dump($columns);
-        dump($labels);
-
         $arr = [];
 
         foreach($labels as $labelrow) {
@@ -182,8 +178,6 @@ class Extension extends \Bolt\BaseExtension
             $values = array_combine($columns, $labelrow);
             $arr[$key] = $values;
         }
-
-        dump($arr);
 
         $jsonarr = json_encode($arr);
 
