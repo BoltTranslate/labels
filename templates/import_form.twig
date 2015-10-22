@@ -84,34 +84,5 @@ jQuery(document).ready(function($) {
 });
 </script>
 
-    {#
-<form action="{{base_path}}/csv" method="POST" enctype="multipart/form-data">
-    <h1>{{ l("labels-ui:CSV") }}</h1>
-    <label for="csv_file">{{ l("labels-ui:Upload CSV File") }}</label>
-    <input class="btn btn-secondary" type="file" name="csv_file" data-filename-placement="inside" title="CSV file..."/>
-    <button class="btn btn-primary" disabled="disabled" type="submit">{{l("labels-ui:Upload")}}</button>
-</form>
-
-<h2>{{ l("labels-ui:Download") }}</h2>
-<div>
-    <a class="btn btn-secondary" href="{{base_path}}/csv">{{ l("labels-ui:Download CSV") }}</a>
-</div>
-
-<script type="text/javascript">
-    $(function() {
-        $('input[type=file]').bootstrapFileInput();
-
-        $('input:file').change(
-            function(){
-                if ($(this).val()) {
-                    $('button:submit').removeAttr('disabled');
-                }
-            }
-        );
-
-    });
-</script> #}
-
-
 
 {% endblock page_main %}
