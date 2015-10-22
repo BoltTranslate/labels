@@ -54,6 +54,32 @@ template.
 
 ```
 
+When working on a website, it's probably easiest to just create the templates, adding `{{ l('foo') }}` tags where applicable. If the `add_missing` option in the config file is set, these will be added to the labels file automatically, once they've been encountered in the templates. This allows you to work on the templates, and then translate all of the labels at once.
+
+If you're working on a larger site, it might be advisable to use a namespace-like structure, to specify the context where a label is used. For example, this would lead to confusion:
+
+```
+<p>
+    To go to the frontpage, click <a href='/'>{{ l('home') }}</a>.
+</p>
+
+<p>
+    {{ l('home') }} is where the heart is.
+</p>
+```
+
+These would be translated differently in most languages. As such, it's good to prefix them with a 'namespace' to make the context clear. There are no set pre-defined namespaces. Pick and choose whatever suits your project. For example:
+
+```
+<p>
+    To go to the frontpage, click <a href='/'>{{ l('navigation:home') }}</a>.
+</p>
+
+<p>
+    {{ l('text:home') }} is where the heart is.
+</p>
+```
+
 Tip: To modify the output of labels, you can use `capitalize`, `lower` and
 `upper`. For example:
 
