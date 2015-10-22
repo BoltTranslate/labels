@@ -21,19 +21,29 @@ The configuration file is pretty self-explanatory. If you're upgrading from a pr
 
 **options**
 
- - `languages`: The array of supported languages. It's advisable to stick to two-letter language codes.
- - `default`: The default language to choose, if none is explicitly set using `lang` or `setlanguage` (see below).
-- `add_missing`: Whether or not to automatically add missing labels to the translation file.
-- `use_fallback`: Fallback to the 'default language', if the label is not defined in the selected language? If set to `false` the extension will return the untranslated label for display in the browser.
+ - `languages`: The array of supported languages. It's advisable to stick to
+   two-letter language codes.
+ - `default`: The default language to choose, if none is explicitly set using
+   `lang` or `setlanguage` (see below).
+ - `add_missing`: Whether or not to automatically add missing labels to the
+   translation file.
+ - `use_fallback`: Fallback to the 'default language', if the label is not
+   defined in the selected language? If set to `false` the extension will
+   return the untranslated label for display in the browser.
 
 Usage in templates
 ------------------
 
 Basic usage: `{{ l('click here') }}`
 
-Note: it's advisable to keep the _labels_ as well as the _language_ names as lowercase. The actual translated labels are case sensitive, and will be used, as they are provided in the translation table.
+Note: it's advisable to keep the _labels_ as well as the _language_ names as
+lowercase. The actual translated labels are case sensitive, and will be used,
+as they are provided in the translation table.
 
-The label that is returned for output in the browser depends on the current language setting. You can pass this explitly, using: `{{ l('click here', 'nl') }}`, but it's usually preferable to set this once in the header of your template.
+The label that is returned for output in the browser depends on the current
+language setting. You can pass this explitly, using: `{{ l('click here', 'nl')
+}}`, but it's usually preferable to set this once in the header of your
+template.
 
 ```
 {{ setlanguage('fr') }}
@@ -44,7 +54,8 @@ The label that is returned for output in the browser depends on the current lang
 
 ```
 
-Tip: To modify the output of labels, you can use `capitalize`, `lower` and `upper`. For example:
+Tip: To modify the output of labels, you can use `capitalize`, `lower` and
+`upper`. For example:
 
 ```
 {{ l('hello') }} -> hallo
