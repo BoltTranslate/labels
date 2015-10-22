@@ -43,9 +43,10 @@ class Extension extends \Bolt\BaseExtension
             }
         }
 
+        $this->boltPath = $this->app['config']->get('general/branding/path');
+
         $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
 
-        $this->boltPath = $this->app['config']->get('general/branding/path');
         $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
         $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
         $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
@@ -118,7 +119,6 @@ class Extension extends \Bolt\BaseExtension
         }
 
         ksort($this->labels);
-        // dump($this->labels);
 
         $languages = array_map('strtoupper', $this->config['languages']);
 
@@ -132,28 +132,27 @@ class Extension extends \Bolt\BaseExtension
             $data[] = array_merge([$label], $values);
         }
 
+        if (!is_writable(__DIR__ ."/files/labels.json")) {
+            $this->app['session']->getFlashBag()->set('error', 'The language file at <tt>../labels/files/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
+        }
+
         $twigvars = [
             'columns' => array_merge([ 'Label'], $languages),
             'data' => $data
         ];
 
         return $this->render('import_form.twig', $twigvars);
-
     }
 
     public function addLabel($label)
     {
-
         $label = strtolower(trim($label));
-
         $this->labels[$label] = [];
-
         $jsonarr = json_encode($this->labels);
 
         if (!file_put_contents(__DIR__ ."/files/labels.json", $jsonarr)) {
             echo "[error saving labels]";
         }
-
     }
 
     public function labelsSavePost(Request $request)
@@ -176,6 +175,11 @@ class Extension extends \Bolt\BaseExtension
 
         if (strlen($jsonarr) < 50) {
             $this->app['session']->getFlashBag()->set('error', 'There was an issue encoding the file. Changes were NOT saved.');
+            return Lib::redirect('labels');
+        }
+
+        if (!is_writable(__DIR__ ."/files/labels.json")) {
+            $this->app['session']->getFlashBag()->set('error', 'The output file is not writable. Changes were NOT saved.');
             return Lib::redirect('labels');
         }
 
