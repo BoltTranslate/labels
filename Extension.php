@@ -9,7 +9,6 @@ namespace Bolt\Extension\Bolt\Labels;
 require_once __DIR__ . '/include/Model.php';
 
 use Bolt\Application;
-use Bolt\Translation\Translator as Trans;
 use Bolt\Library as Lib;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,8 +30,6 @@ class Extension extends \Bolt\BaseExtension
         $this->addTwigFunction('l', 'twigL');
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
 
-        $this->boltPath = $this->app['config']->get('general/branding/path');
-
         // Set the current language..
         $lang = null;
 
@@ -46,8 +43,9 @@ class Extension extends \Bolt\BaseExtension
             }
         }
 
-        $this->addMenuOption(Trans::__('Labels'), "$this->boltPath/labels", "icon-flag");
+        $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
 
+        $this->boltPath = $this->app['config']->get('general/branding/path');
         $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
         $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
         $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
@@ -81,7 +79,8 @@ class Extension extends \Bolt\BaseExtension
     /**
      * Validate a two-letter language code.
      */
-    public function isValidLanguage($lang) {
+    public function isValidLanguage($lang)
+    {
         return preg_match('/^[a-z]{2}$/', $lang);
     }
 
@@ -98,7 +97,8 @@ class Extension extends \Bolt\BaseExtension
         }
     }
 
-    public function getCurrentLanguage() {
+    public function getCurrentLanguage()
+    {
         $twigGlobals = $this->app['twig']->getGlobals();
         if (isset($twigGlobals['lang'])) {
             return $twigGlobals['lang'];
@@ -117,16 +117,17 @@ class Extension extends \Bolt\BaseExtension
             $this->loadLabels();
         }
 
+        ksort($this->labels);
         // dump($this->labels);
 
-        $languages = $this->config['languages'];
+        $languages = array_map('strtoupper', $this->config['languages']);
 
         $data = [];
 
         foreach($this->labels as $label => $row) {
             $values = [];
             foreach($languages as $l) {
-                $values[] = $row[$l] ?: '';
+                $values[] = $row[strtolower($l)] ?: '';
             }
             $data[] = array_merge([$label], $values);
         }
@@ -155,9 +156,9 @@ class Extension extends \Bolt\BaseExtension
 
     }
 
-    public function labelsSavePost(Request $request) {
-
-        $columns = json_decode($request->get('columns'));
+    public function labelsSavePost(Request $request)
+    {
+        $columns = array_map('strtolower', json_decode($request->get('columns')));
         $labels = json_decode($request->get('labels'));
 
         // remove the label.
@@ -202,14 +203,14 @@ class Extension extends \Bolt\BaseExtension
             $this->loadLabels();
         }
 
-        if (!empty($this->labels[$label][$lang])) {
-            $res = $this->labels[$label][$lang];
+        if (!empty($this->labels[$label][strtolower($lang)])) {
+            $res = $this->labels[$label][strtolower($lang)];
         } else {
             $res = '<mark>' . $label . '</mark>';
 
             // Perhaps use the fallback?
-            if ($this->config['use_fallback'] && !empty($this->labels[$label][$this->config['default']])) {
-                $res = $this->labels[$label][$this->config['default']];
+            if ($this->config['use_fallback'] && !empty($this->labels[$label][strtolower($this->config['default'])])) {
+                $res = $this->labels[$label][strtolower($this->config['default'])];
             }
 
             // perhaps add it to the labels file?
