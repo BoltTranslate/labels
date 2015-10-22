@@ -28,11 +28,8 @@ class Extension extends \Bolt\BaseExtension
 
     public function initialize()
     {
-        $this->model = new Model($this->app);
         $this->addTwigFunction('l', 'twigL');
-        $this->addTwigFunction('setLanguage', 'twigSetLanguage');
-
-        // $this->app['integritychecker']->registerExtensionTable(array($this->model, 'getTablesSchema'));
+        $this->addTwigFunction('setlanguage', 'twigSetLanguage');
 
         $this->boltPath = $this->app['config']->get('general/branding/path');
 
@@ -42,30 +39,18 @@ class Extension extends \Bolt\BaseExtension
         if (!empty($_GET['lang'])) {
             // Language has been passed explicitly as ?lang=xx
             $lang = trim(strtolower($_GET['lang']));
-        }
-        elseif (isset($_SERVER['HTTP_HOST'])) {
+        } elseif (isset($_SERVER['HTTP_HOST'])) {
             if ($extracted = $this->extractLanguage($_SERVER['HTTP_HOST'])) {
                 // We're on a language-specific domain
                 $lang = $extracted;
             }
         }
 
-        if (!empty($lang) && $this->isValidLanguage($lang)) {
-            $this->app['session']->set('lang', $lang);
-        }
-
-        if (is_null($this->app['session']->get('lang'))) {
-            $this->app['session']->set('lang', 'nl');
-        }
-
-        $this->config['labels']['current'] = $this->app['session']->get('lang');
-        $this->setCurrentLanguage($this->config['labels']['current']);
-
         $this->addMenuOption(Trans::__('Labels'), "$this->boltPath/labels", "icon-flag");
 
-        $this->app->get("$this->boltPath/labels", array($this, 'translationsGET'))->bind('labels');
-        $this->app->get("$this->boltPath/labels/list", array($this, 'listTranslations'))->bind('list_labels');
-        $this->app->post("$this->boltPath/labels/save", array($this, 'labelsSave'))->bind('save_labels');
+        $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
+        $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
+        $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
 
     }
 
@@ -90,7 +75,6 @@ class Extension extends \Bolt\BaseExtension
         }
 
         return true;
-
 
     }
 
@@ -124,12 +108,6 @@ class Extension extends \Bolt\BaseExtension
         }
     }
 
-    public function listTranslations(Request $request) {
-        $this->requireUserPermission('labels');
-        $page = intval($request->get('page'));
-        $items = $this->model->getTranslatableItems('nl', $this->currentLanguage, false, $page);
-        return $this->render('translatables.twig', array('items' => $items, 'sourceLanguage' => 'nl', 'destLanguage' => $this->currentLanguage));
-    }
 
     public function translationsGET(Request $request)
     {
@@ -162,8 +140,22 @@ class Extension extends \Bolt\BaseExtension
 
     }
 
+    public function addLabel($label)
+    {
 
-    public function labelsSave(Request $request) {
+        $label = strtolower(trim($label));
+
+        $this->labels[$label] = [];
+
+        $jsonarr = json_encode($this->labels);
+
+        if (!file_put_contents(__DIR__ ."/files/labels.json", $jsonarr)) {
+            echo "[error saving labels]";
+        }
+
+    }
+
+    public function labelsSavePost(Request $request) {
 
         $columns = json_decode($request->get('columns'));
         $labels = json_decode($request->get('labels'));
@@ -174,7 +166,7 @@ class Extension extends \Bolt\BaseExtension
         $arr = [];
 
         foreach($labels as $labelrow) {
-            $key = array_shift($labelrow);
+            $key = strtolower(trim(array_shift($labelrow)));
             $values = array_combine($columns, $labelrow);
             $arr[$key] = $values;
         }
@@ -196,53 +188,36 @@ class Extension extends \Bolt\BaseExtension
 
     }
 
-
-    // public function csvExportGET(Request $request) {
-    //     $this->requireUserPermission('labels');
-    //     $csv = $this->model->getExportableItems();
-    //     $headers = array('Content-Type' => 'text/csv');
-    //     $response = Response::create($csv, 200, $headers);
-    //     return $response;
-    // }
-
-    // public function csvImportPOST(Request $request) {
-    //     $this->requireUserPermission('labels');
-    //     $csvFilename = $_FILES['csv_file']['tmp_name'];
-    //     $csvFile = fopen($csvFilename, 'r');
-    //     $count = $this->model->importCSV($csvFile);
-    //     fclose($csvFile);
-    //     $this->app['session']->getFlashBag()->set('success', Trans::__("Imported %count% translations", array('%count%' => $count)));
-    //     return Lib::redirect('translations');
-    // }
-
     /**
      * Twig function {{ l() }} in Labels extension.
-     * Input can be in one of the following forms::
-     *     "foo" -> namespace = '', key = 'foo', language = <default>
-     *     "bar:foo" -> namespace = 'bar', key = 'foo', language = <default>
-     *     "bar:foo:nl" -> namespace = 'bar', key = 'foo', language = 'nl'
-     *     ":foo:nl" -> namespace = '', key = 'foo', language = 'nl'
      */
-    public function twigL($label="")
+    public function twigL($label, $lang =  false)
     {
-        $labelParts = explode(':', $label);
-        $language = $this->currentLanguage;
-        switch (count($labelParts)) {
-            case 0:
-                return ''; // no label given
-            case 1:
-                $namespace = "";
-                $label = $labelParts[0];
-                break;
-            case 2:
-                list($namespace, $label) = $labelParts;
-                break;
-            default:
-                list($namespace, $label, $language) = $labelParts;
-                break;
+
+        if (!$this->isValidLanguage($lang)) {
+            $lang = $this->getCurrentLanguage();
         }
 
-        $res = $this->model->getTranslation($namespace, $label, $language);
+        if (empty($this->labels)) {
+            $this->loadLabels();
+        }
+
+        if (!empty($this->labels[$label][$lang])) {
+            $res = $this->labels[$label][$lang];
+        } else {
+            $res = '<mark>' . $label . '</mark>';
+
+            // Perhaps use the fallback?
+            if ($this->config['use_fallback'] && !empty($this->labels[$label][$this->config['default']])) {
+                $res = $this->labels[$label][$this->config['default']];
+            }
+
+            // perhaps add it to the labels file?
+            if ($this->config['add_missing'] && empty($this->labels[$label])) {
+                $this->addLabel($label);
+            }
+
+        }
 
         return new \Twig_Markup($res, 'UTF-8');
     }

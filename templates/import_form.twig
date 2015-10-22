@@ -23,18 +23,10 @@
         <i class='fa fa-save'></i> Save
     </button>
 
-    <fieldset class="colourpicker">
-        <div class="col-sm-12">
-            <div>
-                <label class="control-label">{{field.label|default(key)}}</label>
-            </div>
+    <div id="hot-grid" style='margin: 12px 0;'></div>
 
-    <div id="hot-{{key}}" style='width: 100%; border-right: 1px solid #DDD; border-bottom: 1px solid #DDD; background-color: #F8F8F8;z-index: 1;'></div>
-
-        <input type="hidden" name="columns" value="{{ columns|json_encode }}">
-            <input type="hidden" name="labels" id="gridfield-labels" value="{{ currentvalue }}">
-        </div>
-    </fieldset>
+    <input type="hidden" name="columns" value="{{ columns|json_encode }}">
+    <input type="hidden" name="labels" id="gridfield-labels" value="{{ currentvalue }}">
 
     <button class="btn btn-primary" disabled="disabled" id="save-button-bottom" type="submit">
         <i class='fa fa-save'></i> Save
@@ -48,13 +40,12 @@ jQuery(document).ready(function($) {
 
   var data = {{ data|json_encode|raw }};
 
-  var container = document.getElementById('hot-{{key}}');
+  var container = document.getElementById('hot-grid');
   var hot = new Handsontable(container,
     {
         autoColumnSize: true,
         minSpareRows: 1,
         width: '100%',
-        height: {{ field.height|default(100) }},
         minCols: {{ columns|length }},
         data: data,
         colHeaders: [ '{{ columns|join("', '")|raw }}' ],
