@@ -65,8 +65,7 @@ class Extension extends \Bolt\BaseExtension
 
         $this->app->get("$this->boltPath/labels", array($this, 'translationsGET'))->bind('labels');
         $this->app->get("$this->boltPath/labels/list", array($this, 'listTranslations'))->bind('list_labels');
-        $this->app->get("$this->boltPath/labels/save", array($this, 'saveLabels'))->bind('save_labels');
-        $this->app->post("$this->boltPath/labels/csv", array($this, 'csvImportPOST'))->bind('import_labels');
+        $this->app->post("$this->boltPath/labels/save", array($this, 'labelsSave'))->bind('save_labels');
 
     }
 
@@ -74,10 +73,25 @@ class Extension extends \Bolt\BaseExtension
     {
         if (preg_match('/^([a-z]{2})\./', $lang, $matches)) {
             return $matches[1];
-        }
-        else {
+        } else {
             return false;
         }
+    }
+
+    public function loadLabels()
+    {
+        try {
+            $labels = file_get_contents(__DIR__ . "/files/labels.json");
+            $this->labels = json_decode($labels, true);
+        } catch (\Exception $e) {
+            $this->app['session']->getFlashBag()->set('error', 'There was an issue loading the labels.');
+            $this->labels = [];
+            return false;
+        }
+
+        return true;
+
+
     }
 
     /**
@@ -117,34 +131,95 @@ class Extension extends \Bolt\BaseExtension
         return $this->render('translatables.twig', array('items' => $items, 'sourceLanguage' => 'nl', 'destLanguage' => $this->currentLanguage));
     }
 
-    public function translationsGET(Request $request) {
+    public function translationsGET(Request $request)
+    {
         $this->requireUserPermission('labels');
 
+        if (empty($this->labels)) {
+            $this->loadLabels();
+        }
+
+        dump($this->labels);
+
+        $languages = $this->config['languages'];
+
+        $data = [];
+
+        foreach($data as $label => $row) {
+            $values = [];
+            foreach($languages as $l) {
+                $values[] = $row[$l] ?: '';
+            }
+            $data[$label] = $values;
+        }
+
+
         $twigvars = [
-            'columns' => array_merge([ 'Label'], $this->config['languages'])
+            'columns' => array_merge([ 'Label'], $languages),
+            'data' => $data
         ];
 
         return $this->render('import_form.twig', $twigvars);
 
     }
 
-    public function csvExportGET(Request $request) {
-        $this->requireUserPermission('labels');
-        $csv = $this->model->getExportableItems();
-        $headers = array('Content-Type' => 'text/csv');
-        $response = Response::create($csv, 200, $headers);
-        return $response;
+
+    public function labelsSave(Request $request) {
+
+        $columns = json_decode($request->get('columns'));
+        $labels = json_decode($request->get('labels'));
+
+        // remove the label.
+        array_shift($columns);
+
+        dump($columns);
+        dump($labels);
+
+        $arr = [];
+
+        foreach($labels as $labelrow) {
+            $key = array_shift($labelrow);
+            $values = array_combine($columns, $labelrow);
+            $arr[$key] = $values;
+        }
+
+        dump($arr);
+
+        $jsonarr = json_encode($arr);
+
+        if (strlen($jsonarr) < 50) {
+            $this->app['session']->getFlashBag()->set('error', 'There was an issue encoding the file. Changes were NOT saved.');
+            return Lib::redirect('labels');
+        }
+
+        if (!file_put_contents(__DIR__ ."/files/labels.json", $jsonarr)) {
+            $this->app['session']->getFlashBag()->set('error', 'There was an issue saving the file. Changes were NOT saved.');
+            return Lib::redirect('labels');
+        }
+
+        $this->app['session']->getFlashBag()->set('success', 'Changes to the labels have been saved.');
+        return Lib::redirect('labels');
+
     }
 
-    public function csvImportPOST(Request $request) {
-        $this->requireUserPermission('labels');
-        $csvFilename = $_FILES['csv_file']['tmp_name'];
-        $csvFile = fopen($csvFilename, 'r');
-        $count = $this->model->importCSV($csvFile);
-        fclose($csvFile);
-        $this->app['session']->getFlashBag()->set('success', Trans::__("Imported %count% translations", array('%count%' => $count)));
-        return Lib::redirect('translations');
-    }
+
+    // public function csvExportGET(Request $request) {
+    //     $this->requireUserPermission('labels');
+    //     $csv = $this->model->getExportableItems();
+    //     $headers = array('Content-Type' => 'text/csv');
+    //     $response = Response::create($csv, 200, $headers);
+    //     return $response;
+    // }
+
+    // public function csvImportPOST(Request $request) {
+    //     $this->requireUserPermission('labels');
+    //     $csvFilename = $_FILES['csv_file']['tmp_name'];
+    //     $csvFile = fopen($csvFilename, 'r');
+    //     $count = $this->model->importCSV($csvFile);
+    //     fclose($csvFile);
+    //     $this->app['session']->getFlashBag()->set('success', Trans::__("Imported %count% translations", array('%count%' => $count)));
+    //     return Lib::redirect('translations');
+    // }
 
     /**
      * Twig function {{ l() }} in Labels extension.

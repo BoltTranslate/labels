@@ -2,10 +2,8 @@
 
 {#=== Options ============================================================================#}
 
-{% if context.content.get(key) is empty or context.content.get(key) is not json %}
-    {% set currentvalue = '[[]]' %}
-{% else %}
-    {% set currentvalue = context.content.get(key) %}
+{% if data is empty or data is not json %}
+    {% set data = '[[]]' %}
 {% endif %}
 
 {% set minimumcolumns = max(field.columns|length, field.minimumcolumns, 5) %}
@@ -19,11 +17,11 @@
 
 {% block page_main %}
 
-{{ dump(currentvalue) }}
+{{ dump(data) }}
 
 {{ dump(columns) }}
 
-<form action="{{base_path}}/labels/save" method="POST" enctype="multipart/form-data">
+<form action="{{ path('save_labels') }}" method="POST" enctype="multipart/form-data">
 
     <fieldset class="colourpicker">
         <div class="col-sm-12">
@@ -48,7 +46,7 @@
 <script>
 jQuery(document).ready(function($) {
 
-  var data = {{ currentvalue|raw }};
+  var data = {{ data|raw }};
 
   var container = document.getElementById('hot-{{key}}');
   var hot = new Handsontable(container,
