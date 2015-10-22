@@ -1,34 +1,77 @@
 {% extends '_base/_page-nav.twig' %}
 
+{#=== Options ============================================================================#}
+
+{% if data is empty or data is not iterable %}
+    {% set data = [] %}
+{% endif %}
+
+{% set minimumcolumns = max(field.columns|length, field.minimumcolumns, 5) %}
+
+{#=== FIELDSET ============================================================================#}
+
+
 {% block page_nav 'Labels' %}
 
-{% block page_title __('page.labels.title') %}
+{% block page_title __('Edit labels') %}
 
 {% block page_main %}
-<form action="{{base_path}}/csv" method="POST" enctype="multipart/form-data">
-    <h1>{{ l("labels-ui:CSV") }}</h1>
-    <label for="csv_file">{{ l("labels-ui:Upload CSV File") }}</label>
-    <input class="btn btn-secondary" type="file" name="csv_file" data-filename-placement="inside" title="CSV file..."/>
-    <button class="btn btn-primary" disabled="disabled" type="submit">{{l("labels-ui:Upload")}}</button>
+
+<form action="{{ path('save_labels') }}" method="POST" enctype="multipart/form-data">
+
+    <button class="btn btn-primary" disabled="disabled" id="save-button" type="submit">
+        <i class='fa fa-save'></i> Save
+    </button>
+
+    <div id="hot-grid" style='margin: 12px 0;'></div>
+
+    <input type="hidden" name="columns" value="{{ columns|json_encode }}">
+    <input type="hidden" name="labels" id="gridfield-labels" value="{{ currentvalue }}">
+
+    <button class="btn btn-primary" disabled="disabled" id="save-button-bottom" type="submit">
+        <i class='fa fa-save'></i> Save
+    </button>
+
 </form>
 
-<h2>{{ l("labels-ui:Download") }}</h2>
-<div>
-    <a class="btn btn-secondary" href="{{base_path}}/csv">{{ l("labels-ui:Download CSV") }}</a>
-</div>
 
-<script type="text/javascript">
-    $(function() {
-        $('input[type=file]').bootstrapFileInput();
+<script>
+jQuery(document).ready(function($) {
 
-        $('input:file').change(
-            function(){
-                if ($(this).val()) {
-                    $('button:submit').removeAttr('disabled'); 
-                } 
-            }
-        );
+  var data = {{ data|json_encode|raw }};
 
+  var container = document.getElementById('hot-grid');
+  var hot = new Handsontable(container,
+    {
+        autoColumnSize: true,
+        minSpareRows: 1,
+        width: '100%',
+        minCols: {{ columns|length }},
+        data: data,
+        colHeaders: [ '{{ columns|join("', '")|raw }}' ],
+        columnSorting: true,
+        sortIndicator: true,
+        rowHeaders: false,
+        manualRowMove: true,
+        contextMenu: true,
+        manualColumnResize: true,
+        afterRender: updateData,
+        afterColumnSort: updateData,
+        afterRowMove: updateData
     });
+    function updateData(changes, source) {
+        if(hot){
+            var data = this.getData(0, 0, hot.countRows() - 1, hot.countCols() - 1); // Because #989
+            data = data.filter(function(row) {
+                return !_.isEmpty(_.without(row, null));
+            });
+            jQuery('#gridfield-labels').val(JSON.stringify(data));
+            $('#save-button, #save-button-bottom').removeAttr('disabled');
+        }
+    }
+
+});
 </script>
+
+
 {% endblock page_main %}

@@ -9,7 +9,6 @@ namespace Bolt\Extension\Bolt\Labels;
 require_once __DIR__ . '/include/Model.php';
 
 use Bolt\Application;
-use Bolt\Translation\Translator as Trans;
 use Bolt\Library as Lib;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,13 +27,8 @@ class Extension extends \Bolt\BaseExtension
 
     public function initialize()
     {
-        $this->model = new Model($this->app);
         $this->addTwigFunction('l', 'twigL');
-        $this->addTwigFunction('setLanguage', 'twigSetLanguage');
-
-        $this->app['integritychecker']->registerExtensionTable(array($this->model, 'getTablesSchema'));
-
-        $this->boltPath = $this->app['config']->get('general/branding/path');
+        $this->addTwigFunction('setlanguage', 'twigSetLanguage');
 
         // Set the current language..
         $lang = null;
@@ -42,31 +36,20 @@ class Extension extends \Bolt\BaseExtension
         if (!empty($_GET['lang'])) {
             // Language has been passed explicitly as ?lang=xx
             $lang = trim(strtolower($_GET['lang']));
-        }
-        elseif (isset($_SERVER['HTTP_HOST'])) {
+        } elseif (isset($_SERVER['HTTP_HOST'])) {
             if ($extracted = $this->extractLanguage($_SERVER['HTTP_HOST'])) {
                 // We're on a language-specific domain
                 $lang = $extracted;
             }
         }
 
-        if (!empty($lang) && $this->isValidLanguage($lang)) {
-            $this->app['session']->set('lang', $lang);
-        }
+        $this->boltPath = $this->app['config']->get('general/branding/path');
 
-        if (is_null($this->app['session']->get('lang'))) {
-            $this->app['session']->set('lang', 'nl');
-        }
+        $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
 
-        $this->config['labels']['current'] = $this->app['session']->get('lang');
-        $this->setCurrentLanguage($this->config['labels']['current']);
-
-        $this->addMenuOption(Trans::__('Labels'), "$this->boltPath/translations", "icon-flag");
-
-        $this->app->get("$this->boltPath/translations", array($this, 'translationsGET'))->bind('translations');
-        $this->app->get("$this->boltPath/translations/list", array($this, 'listTranslations'))->bind('list_translations');
-        $this->app->get("$this->boltPath/translations/csv", array($this, 'csvExportGET'))->bind('translations_csv_export');
-        $this->app->post("$this->boltPath/translations/csv", array($this, 'csvImportPOST'))->bind('translations_csv_import');
+        $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
+        $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
+        $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
 
     }
 
@@ -74,16 +57,31 @@ class Extension extends \Bolt\BaseExtension
     {
         if (preg_match('/^([a-z]{2})\./', $lang, $matches)) {
             return $matches[1];
-        }
-        else {
+        } else {
             return false;
         }
+    }
+
+    public function loadLabels()
+    {
+        try {
+            $labels = file_get_contents(__DIR__ . "/files/labels.json");
+            $this->labels = json_decode($labels, true);
+        } catch (\Exception $e) {
+            $this->app['session']->getFlashBag()->set('error', 'There was an issue loading the labels.');
+            $this->labels = [];
+            return false;
+        }
+
+        return true;
+
     }
 
     /**
      * Validate a two-letter language code.
      */
-    public function isValidLanguage($lang) {
+    public function isValidLanguage($lang)
+    {
         return preg_match('/^[a-z]{2}$/', $lang);
     }
 
@@ -100,7 +98,8 @@ class Extension extends \Bolt\BaseExtension
         }
     }
 
-    public function getCurrentLanguage() {
+    public function getCurrentLanguage()
+    {
         $twigGlobals = $this->app['twig']->getGlobals();
         if (isset($twigGlobals['lang'])) {
             return $twigGlobals['lang'];
@@ -110,64 +109,120 @@ class Extension extends \Bolt\BaseExtension
         }
     }
 
-    public function listTranslations(Request $request) {
+
+    public function translationsGET(Request $request)
+    {
         $this->requireUserPermission('labels');
-        $page = intval($request->get('page'));
-        $items = $this->model->getTranslatableItems('nl', $this->currentLanguage, false, $page);
-        return $this->render('translatables.twig', array('items' => $items, 'sourceLanguage' => 'nl', 'destLanguage' => $this->currentLanguage));
+
+        if (empty($this->labels)) {
+            $this->loadLabels();
+        }
+
+        ksort($this->labels);
+
+        $languages = array_map('strtoupper', $this->config['languages']);
+
+        $data = [];
+
+        foreach($this->labels as $label => $row) {
+            $values = [];
+            foreach($languages as $l) {
+                $values[] = $row[strtolower($l)] ?: '';
+            }
+            $data[] = array_merge([$label], $values);
+        }
+
+        if (!is_writable(__DIR__ ."/files/labels.json")) {
+            $this->app['session']->getFlashBag()->set('error', 'The language file at <tt>../labels/files/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
+        }
+
+        $twigvars = [
+            'columns' => array_merge([ 'Label'], $languages),
+            'data' => $data
+        ];
+
+        return $this->render('import_form.twig', $twigvars);
     }
 
-    public function translationsGET(Request $request) {
-        $this->requireUserPermission('labels');
-        return $this->render('import_form.twig', array());
+    public function addLabel($label)
+    {
+        $label = strtolower(trim($label));
+        $this->labels[$label] = [];
+        $jsonarr = json_encode($this->labels);
+
+        if (!file_put_contents(__DIR__ ."/files/labels.json", $jsonarr)) {
+            echo "[error saving labels]";
+        }
     }
 
-    public function csvExportGET(Request $request) {
-        $this->requireUserPermission('labels');
-        $csv = $this->model->getExportableItems();
-        $headers = array('Content-Type' => 'text/csv');
-        $response = Response::create($csv, 200, $headers);
-        return $response;
-    }
+    public function labelsSavePost(Request $request)
+    {
+        $columns = array_map('strtolower', json_decode($request->get('columns')));
+        $labels = json_decode($request->get('labels'));
 
-    public function csvImportPOST(Request $request) {
-        $this->requireUserPermission('labels');
-        $csvFilename = $_FILES['csv_file']['tmp_name'];
-        $csvFile = fopen($csvFilename, 'r');
-        $count = $this->model->importCSV($csvFile);
-        fclose($csvFile);
-        $this->app['session']->getFlashBag()->set('success', Trans::__("Imported %count% translations", array('%count%' => $count)));
-        return Lib::redirect('translations');
+        // remove the label.
+        array_shift($columns);
+
+        $arr = [];
+
+        foreach($labels as $labelrow) {
+            $key = strtolower(trim(array_shift($labelrow)));
+            $values = array_combine($columns, $labelrow);
+            $arr[$key] = $values;
+        }
+
+        $jsonarr = json_encode($arr);
+
+        if (strlen($jsonarr) < 50) {
+            $this->app['session']->getFlashBag()->set('error', 'There was an issue encoding the file. Changes were NOT saved.');
+            return Lib::redirect('labels');
+        }
+
+        if (!is_writable(__DIR__ ."/files/labels.json")) {
+            $this->app['session']->getFlashBag()->set('error', 'The output file is not writable. Changes were NOT saved.');
+            return Lib::redirect('labels');
+        }
+
+        if (!file_put_contents(__DIR__ ."/files/labels.json", $jsonarr)) {
+            $this->app['session']->getFlashBag()->set('error', 'There was an issue saving the file. Changes were NOT saved.');
+            return Lib::redirect('labels');
+        }
+
+        $this->app['session']->getFlashBag()->set('success', 'Changes to the labels have been saved.');
+        return Lib::redirect('labels');
+
     }
 
     /**
      * Twig function {{ l() }} in Labels extension.
-     * Input can be in one of the following forms::
-     *     "foo" -> namespace = '', key = 'foo', language = <default>
-     *     "bar:foo" -> namespace = 'bar', key = 'foo', language = <default>
-     *     "bar:foo:nl" -> namespace = 'bar', key = 'foo', language = 'nl'
-     *     ":foo:nl" -> namespace = '', key = 'foo', language = 'nl'
      */
-    public function twigL($label="")
+    public function twigL($label, $lang =  false)
     {
-        $labelParts = explode(':', $label);
-        $language = $this->currentLanguage;
-        switch (count($labelParts)) {
-            case 0:
-                return ''; // no label given
-            case 1:
-                $namespace = "";
-                $label = $labelParts[0];
-                break;
-            case 2:
-                list($namespace, $label) = $labelParts;
-                break;
-            default:
-                list($namespace, $label, $language) = $labelParts;
-                break;
+
+        if (!$this->isValidLanguage($lang)) {
+            $lang = $this->getCurrentLanguage();
         }
 
-        $res = $this->model->getTranslation($namespace, $label, $language);
+        if (empty($this->labels)) {
+            $this->loadLabels();
+        }
+
+        if (!empty($this->labels[$label][strtolower($lang)])) {
+            $res = $this->labels[$label][strtolower($lang)];
+        } else {
+            $res = '<mark>' . $label . '</mark>';
+
+            // Perhaps use the fallback?
+            if ($this->config['use_fallback'] && !empty($this->labels[$label][strtolower($this->config['default'])])) {
+                $res = $this->labels[$label][strtolower($this->config['default'])];
+            }
+
+            // perhaps add it to the labels file?
+            if ($this->config['add_missing'] && empty($this->labels[$label])) {
+                $this->addLabel($label);
+            }
+
+        }
 
         return new \Twig_Markup($res, 'UTF-8');
     }
@@ -186,7 +241,13 @@ class Extension extends \Bolt\BaseExtension
 
     private function render($template, $data) {
         $this->app['twig.loader.filesystem']->addPath(dirname(__FILE__) . '/templates');
-        $data['base_path'] = $this->boltPath . '/translations';
+
+        if ($this->app['config']->getWhichEnd()=='backend') {
+            $this->addCss('assets/handsontable.full.min.css');
+            $this->addJavascript('assets/handsontable.full.min.js', true);
+            $this->addJavascript('assets/start.js', true);
+        }
+
         return $this->app['render']->render($template, $data);
     }
 }
