@@ -30,8 +30,24 @@ class Extension extends \Bolt\BaseExtension
         $this->addTwigFunction('l', 'twigL');
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
 
-        // Set the current language..
-        $lang = null;
+        $this->before();
+
+        $this->boltPath = $this->app['config']->get('general/branding/path');
+
+        $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
+
+        $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
+        $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
+        $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
+
+    }
+
+    /**
+     * Set the current language
+     */
+    public function before()
+    {
+        $lang = $this->config['default'];
 
         if (!empty($_GET['lang'])) {
             // Language has been passed explicitly as ?lang=xx
@@ -43,14 +59,13 @@ class Extension extends \Bolt\BaseExtension
             }
         }
 
-        $this->boltPath = $this->app['config']->get('general/branding/path');
-
-        $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
-
-        $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
-        $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
-        $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
-
+        if (!empty($lang) && $this->isValidLanguage($lang)) {
+            $this->app['session']->set('lang', $lang);
+        }
+        if (is_null($this->app['session']->get('lang'))) {
+            $this->app['session']->set('lang', 'nl');
+        }
+        $this->setCurrentLanguage($lang);
     }
 
     public function extractLanguage($lang)
@@ -243,6 +258,7 @@ class Extension extends \Bolt\BaseExtension
         $this->app['twig.loader.filesystem']->addPath(dirname(__FILE__) . '/templates');
 
         if ($this->app['config']->getWhichEnd()=='backend') {
+            $this->app['htmlsnippets'] = true;
             $this->addCss('assets/handsontable.full.min.css');
             $this->addJavascript('assets/handsontable.full.min.js', true);
             $this->addJavascript('assets/start.js', true);
