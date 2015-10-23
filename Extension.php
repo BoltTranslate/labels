@@ -30,8 +30,23 @@ class Extension extends \Bolt\BaseExtension
         $this->addTwigFunction('l', 'twigL');
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
 
-        // Set the current language..
-        
+        $this->before();
+
+        $this->boltPath = $this->app['config']->get('general/branding/path');
+
+        $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
+
+        $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
+        $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
+        $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
+
+    }
+
+    /**
+     * Set the current language
+     */
+    public function before()
+    {
         $lang = $this->config['default'];
 
         if (!empty($_GET['lang'])) {
@@ -51,15 +66,6 @@ class Extension extends \Bolt\BaseExtension
             $this->app['session']->set('lang', 'nl');
         }
         $this->setCurrentLanguage($lang);
-        
-        $this->boltPath = $this->app['config']->get('general/branding/path');
-
-        $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
-
-        $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
-        $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
-        $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
-
     }
 
     public function extractLanguage($lang)
