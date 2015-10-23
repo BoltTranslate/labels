@@ -54,8 +54,8 @@ class Extension extends \Bolt\BaseExtension
         if (!empty($_GET['lang'])) {
             // Language has been passed explicitly as ?lang=xx
             $lang = trim(strtolower($_GET['lang']));
-        } elseif (isset($_SERVER['HTTP_HOST'])) {
-            if ($extracted = $this->extractLanguage($_SERVER['HTTP_HOST'])) {
+        } elseif (isset($_SERVER['REQUEST_URI'])) {
+            if ($extracted = $this->extractLanguage($_SERVER['REQUEST_URI'])) {
                 // We're on a language-specific domain
                 $lang = $extracted;
             }
@@ -72,7 +72,7 @@ class Extension extends \Bolt\BaseExtension
 
     public function extractLanguage($lang)
     {
-        if (preg_match('/^([a-z]{2})\./', $lang, $matches)) {
+        if (preg_match('@^/([a-z]{2})/?@', $requestUri, $matches)) {
             return $matches[1];
         } else {
             return false;
