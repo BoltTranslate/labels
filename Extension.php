@@ -31,7 +31,8 @@ class Extension extends \Bolt\BaseExtension
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
 
         // Set the current language..
-        $lang = null;
+        
+        $lang = $this->config['default'];
 
         if (!empty($_GET['lang'])) {
             // Language has been passed explicitly as ?lang=xx
