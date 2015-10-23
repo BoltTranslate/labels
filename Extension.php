@@ -34,6 +34,8 @@ class Extension extends \Bolt\BaseExtension
 
         $this->boltPath = $this->app['config']->get('general/branding/path');
 
+        $this->fileName = $this->app['paths']['configpath'] . '/extensions/labels.json';
+
         $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
 
         $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
@@ -79,8 +81,13 @@ class Extension extends \Bolt\BaseExtension
 
     public function loadLabels()
     {
+
         try {
-            $labels = file_get_contents(__DIR__ . "/files/labels.json");
+            if (is_readable($this->fileName)) {
+                $labels = file_get_contents($this->fileName);
+            } else {
+                $labels = file_get_contents(__DIR__ . "/files/labels.json");
+            }
             $this->labels = json_decode($labels, true);
         } catch (\Exception $e) {
             $this->app['session']->getFlashBag()->set('error', 'There was an issue loading the labels.');
@@ -147,8 +154,12 @@ class Extension extends \Bolt\BaseExtension
             $data[] = array_merge([$label], $values);
         }
 
-        if (!is_writable(__DIR__ ."/files/labels.json")) {
-            $this->app['session']->getFlashBag()->set('error', 'The language file at <tt>../labels/files/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
+        if (!file_exists($this->fileName) && !is_writable(dirname($this->fileName))) {
+            $this->app['session']->getFlashBag()->set('error',
+                'The labels file at <tt>../app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT saved, until you fix this.');
+        } else if (file_exists($this->fileName) && !is_writable($this->fileName)) {
+            $this->app['session']->getFlashBag()->set('error',
+                'The labels file at <tt>../app/config/extensions/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
         }
 
         $twigvars = [
@@ -165,7 +176,7 @@ class Extension extends \Bolt\BaseExtension
         $this->labels[$label] = [];
         $jsonarr = json_encode($this->labels);
 
-        if (!file_put_contents(__DIR__ ."/files/labels.json", $jsonarr)) {
+        if (!file_put_contents($this->fileName, $jsonarr)) {
             echo "[error saving labels]";
         }
     }
@@ -193,13 +204,17 @@ class Extension extends \Bolt\BaseExtension
             return Lib::redirect('labels');
         }
 
-        if (!is_writable(__DIR__ ."/files/labels.json")) {
-            $this->app['session']->getFlashBag()->set('error', 'The output file is not writable. Changes were NOT saved.');
-            return Lib::redirect('labels');
+        if (!file_exists($this->fileName) && !is_writable(dirname($this->fileName))) {
+            $this->app['session']->getFlashBag()->set('error',
+                'The labels file at <tt>../app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes were NOT saved.');
+        } else if (file_exists($this->fileName) && !is_writable($this->fileName)) {
+            $this->app['session']->getFlashBag()->set('error',
+                'The labels file at <tt>../app/config/extensions/labels.json</tt> is not writable. Changes were NOT saved.');
         }
 
-        if (!file_put_contents(__DIR__ ."/files/labels.json", $jsonarr)) {
-            $this->app['session']->getFlashBag()->set('error', 'There was an issue saving the file. Changes were NOT saved.');
+        if (!file_put_contents($this->fileName, $jsonarr)) {
+            $this->app['session']->getFlashBag()->set('error',
+                'There was an issue saving the file. Changes were NOT saved.');
             return Lib::redirect('labels');
         }
 
