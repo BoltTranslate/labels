@@ -22,20 +22,31 @@ class Extension extends BaseExtension
 
     public function initialize()
     {
+        $this->before();
+
+        // Twig functions
         $this->addTwigFunction('l', 'twigL');
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
 
-        $this->before();
 
-        $this->boltPath = $this->app['config']->get('general/branding/path');
+        $root = $this->app['resources']->getUrl('bolt');
 
+        // JSON file
         $this->fileName = $this->getBasePath() . '/labels.json';
 
-        $this->addMenuOption('Label translations', "$this->boltPath/labels", 'fa:flag');
+        // Admin menu
+        $this->addMenuOption('Label translations', $root . 'labels', 'fa:flag');
 
-        $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
-        $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
-        $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
+        // Routess
+        $this->app->get($root . 'labels', array($this, 'translationsGET'))
+            ->bind('labels')
+        ;
+        $this->app->get($root . 'labels/list', array($this, 'listTranslations'))
+            ->bind('list_labels')
+        ;
+        $this->app->post($root . 'labels/save', array($this, 'labelsSavePost'))
+            ->bind('save_labels')
+        ;
     }
 
     /**
