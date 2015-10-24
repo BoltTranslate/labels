@@ -1,18 +1,16 @@
 <?php
-/**
- * Labels Extension for Bolt
- *
- * @author Bob den Otter <bob@twokings.nl>
- */
 
 namespace Bolt\Extension\Bolt\Labels;
-
-require_once __DIR__ . '/include/Model.php';
 
 use Bolt\BaseExtension;
 use Bolt\Library as Lib;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * Labels Extension for Bolt
+ *
+ * @author Bob den Otter <bob@twokings.nl>
+ */
 class Extension extends BaseExtension
 {
     public function getName()
