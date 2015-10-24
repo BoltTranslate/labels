@@ -1,1 +1,4 @@
 .*.swp
+composer.lock
+vendor/
+tests/tmp/
