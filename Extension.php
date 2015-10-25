@@ -4,6 +4,9 @@ namespace Bolt\Extension\Bolt\Labels;
 
 use Bolt\BaseExtension;
 use Bolt\Library as Lib;
+use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -13,6 +16,8 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class Extension extends BaseExtension
 {
+    protected $labels;
+
     public function getName()
     {
         return 'labels';
@@ -26,11 +31,7 @@ class Extension extends BaseExtension
         $this->addTwigFunction('l', 'twigL');
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
 
-
         $root = $this->app['resources']->getUrl('bolt');
-
-        // JSON file
-        $this->fileName = $this->getBasePath() . '/labels.json';
 
         // Admin menu
         $this->addMenuOption('Label translations', $root . 'labels', 'fa:flag');
@@ -85,20 +86,44 @@ class Extension extends BaseExtension
 
     public function loadLabels()
     {
-        try {
-            if (is_readable($this->fileName)) {
-                $labels = file_get_contents($this->fileName);
-            } else {
-                $labels = file_get_contents(__DIR__ . '/files/labels.json');
+        $jsonFile = $this->app['resources']->getPath('extensionsconfig') . '/labels.json';
+        $fs = new Filesystem();
+
+        // Check that the user's JSON file exists, else copy in the default
+        if (!$fs->exists($jsonFile)) {
+            try {
+                $fs->copy($this->getBasePath() . '/files/labels.json', $jsonFile);
+            } catch (IOException $e) {
+                $this->app['session']->getFlashBag()->set('error',
+                    'The labels file at <tt>app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT saved, until you fix this.');
             }
-            $this->labels = json_decode($labels, true);
-        } catch (\Exception $e) {
-            $this->app['session']->getFlashBag()->set('error', 'There was an issue loading the labels.');
-            $this->labels = [];
-            return false;
         }
 
-        return true;
+        // Check the file is writable
+        try {
+            $fs->touch($jsonFile);
+        } catch (IOException $e) {
+            $this->app['session']->getFlashBag()->set('error',
+                'The labels file at <tt>app/config/extensions/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
+        }
+
+        // Read the contents of the file
+        try {
+            $finder = new Finder();
+            $finder
+                ->files()
+                ->name('labels.json')
+                ->in($this->app['resources']->getPath('extensionsconfig'))
+            ;
+
+            foreach ($finder->files() as $file) {
+                $this->labels = json_decode($file->getContents(), true);
+                continue;
+            }
+        } catch (\Exception $e) {
+            $this->app['session']->getFlashBag()->set('error', sprintf('There was an issue loading the labels: %s', $e->getMessage()));
+            $this->labels = false;
+        }
     }
 
     /**
@@ -136,7 +161,7 @@ class Extension extends BaseExtension
     {
         $this->requireUserPermission('labels');
 
-        if (empty($this->labels)) {
+        if ($this->labels === null) {
             $this->loadLabels();
         }
 
@@ -152,14 +177,6 @@ class Extension extends BaseExtension
                 $values[] = $row[strtolower($l)] ?: '';
             }
             $data[] = array_merge([$label], $values);
-        }
-
-        if (!file_exists($this->fileName) && !is_writable(dirname($this->fileName))) {
-            $this->app['session']->getFlashBag()->set('error',
-                'The labels file at <tt>../app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT saved, until you fix this.');
-        } elseif (file_exists($this->fileName) && !is_writable($this->fileName)) {
-            $this->app['session']->getFlashBag()->set('error',
-                'The labels file at <tt>../app/config/extensions/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
         }
 
         $twigvars = [
@@ -204,21 +221,16 @@ class Extension extends BaseExtension
             return Lib::redirect('labels');
         }
 
-        if (!file_exists($this->fileName) && !is_writable(dirname($this->fileName))) {
-            $this->app['session']->getFlashBag()->set('error',
-                'The labels file at <tt>../app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes were NOT saved.');
-        } elseif (file_exists($this->fileName) && !is_writable($this->fileName)) {
+        $fs = new Filesystem();
+        try {
+            $jsonFile = $this->app['resources']->getPath('extensionsconfig') . '/labels.json';
+            $fs->dumpFile($jsonFile, $jsonarr);
+            $this->app['session']->getFlashBag()->set('success', 'Changes to the labels have been saved.');
+        } catch (IOException $e) {
             $this->app['session']->getFlashBag()->set('error',
                 'The labels file at <tt>../app/config/extensions/labels.json</tt> is not writable. Changes were NOT saved.');
         }
 
-        if (!file_put_contents($this->fileName, $jsonarr)) {
-            $this->app['session']->getFlashBag()->set('error',
-                'There was an issue saving the file. Changes were NOT saved.');
-            return Lib::redirect('labels');
-        }
-
-        $this->app['session']->getFlashBag()->set('success', 'Changes to the labels have been saved.');
         return Lib::redirect('labels');
     }
 
@@ -231,7 +243,7 @@ class Extension extends BaseExtension
             $lang = $this->getCurrentLanguage();
         }
 
-        if (empty($this->labels)) {
+        if ($this->labels === null) {
             $this->loadLabels();
         }
 
@@ -271,9 +283,9 @@ class Extension extends BaseExtension
     protected function getDefaultConfig()
     {
         return array(
-            'languages' => array('en', 'nl', 'de', 'fy', 'fr'),
-            'default' => 'nl',
-            'current' => 'nl',
+            'languages'   => array('en', 'nl', 'de', 'fy', 'fr'),
+            'default'     => 'nl',
+            'current'     => 'nl',
         );
     }
 
