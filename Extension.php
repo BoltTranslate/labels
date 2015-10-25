@@ -25,7 +25,7 @@ class Extension extends BaseExtension
 
     public function initialize()
     {
-        $this->before();
+        $this->app->before(array($this, 'before'));
 
         // Twig functions
         $this->addTwigFunction('l', 'twigL');
@@ -50,8 +50,10 @@ class Extension extends BaseExtension
 
     /**
      * Set the current language
+     *
+     * @param Request $request
      */
-    public function before()
+    public function before(Request $request)
     {
         $lang = $this->config['default'];
 
