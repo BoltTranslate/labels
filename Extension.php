@@ -20,7 +20,7 @@ class Extension extends BaseExtension
 
     public function getName()
     {
-        return 'labels';
+        return 'Labels';
     }
 
     public function initialize()
@@ -30,6 +30,7 @@ class Extension extends BaseExtension
         // Twig functions
         $this->addTwigFunction('l', 'twigL');
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
+        $this->addTwigFunction('setLanguage', 'twigSetLanguage'); # Deprecated! This was the old twig function.
 
         $root = $this->app['resources']->getUrl('bolt');
 
