@@ -290,9 +290,10 @@ class Extension extends BaseExtension
     protected function getDefaultConfig()
     {
         return array(
-            'languages'   => array('en', 'nl', 'de', 'fy', 'fr'),
-            'default'     => 'nl',
-            'current'     => 'nl',
+            'languages'    => array('en'),
+            'default'      => 'en',
+            'add_missing'  => true,
+            'use_fallback' => true
         );
     }
 
