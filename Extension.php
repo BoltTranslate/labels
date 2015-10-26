@@ -195,7 +195,7 @@ class Extension extends BaseExtension
     {
         $label = strtolower(trim($label));
         $this->labels[$label] = [];
-        $jsonarr = json_encode($this->labels);
+        $jsonarr = json_encode($this->labels, JSON_PRETTY_PRINT);
 
         if (!file_put_contents($this->jsonFile, $jsonarr)) {
             echo '[error saving labels]';
@@ -220,7 +220,7 @@ class Extension extends BaseExtension
             }
         }
 
-        $jsonarr = json_encode($arr);
+        $jsonarr = json_encode($arr, JSON_PRETTY_PRINT);
 
         if (strlen($jsonarr) < 50) {
             $this->app['session']->getFlashBag()->set('error', 'There was an issue encoding the file. Changes were NOT saved.');
@@ -244,6 +244,8 @@ class Extension extends BaseExtension
      */
     public function twigL($label, $lang =  false)
     {
+        $label = strtolower(trim($label));
+
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
         }
