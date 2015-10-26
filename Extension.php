@@ -215,7 +215,9 @@ class Extension extends BaseExtension
         foreach ($labels as $labelrow) {
             $key = strtolower(trim(array_shift($labelrow)));
             $values = array_combine($columns, $labelrow);
-            $arr[$key] = $values;
+            if (!empty($key)) {
+                $arr[$key] = $values;
+            }
         }
 
         $jsonarr = json_encode($arr);
