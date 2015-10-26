@@ -57,6 +57,8 @@ class Extension extends BaseExtension
     {
         $lang = $this->config['default'];
 
+        $this->jsonFile = $this->app['resources']->getPath('extensionsconfig') . '/labels.json';
+
         if (!empty($_GET['lang'])) {
             // Language has been passed explicitly as ?lang=xx
             $lang = trim(strtolower($_GET['lang']));
@@ -88,13 +90,12 @@ class Extension extends BaseExtension
 
     public function loadLabels()
     {
-        $jsonFile = $this->app['resources']->getPath('extensionsconfig') . '/labels.json';
         $fs = new Filesystem();
 
         // Check that the user's JSON file exists, else copy in the default
-        if (!$fs->exists($jsonFile)) {
+        if (!$fs->exists($this->jsonFile)) {
             try {
-                $fs->copy($this->getBasePath() . '/files/labels.json', $jsonFile);
+                $fs->copy($this->getBasePath() . '/files/labels.json', $this->jsonFile);
             } catch (IOException $e) {
                 $this->app['session']->getFlashBag()->set('error',
                     'The labels file at <tt>app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT saved, until you fix this.');
@@ -103,7 +104,7 @@ class Extension extends BaseExtension
 
         // Check the file is writable
         try {
-            $fs->touch($jsonFile);
+            $fs->touch($this->jsonFile);
         } catch (IOException $e) {
             $this->app['session']->getFlashBag()->set('error',
                 'The labels file at <tt>app/config/extensions/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
@@ -195,7 +196,7 @@ class Extension extends BaseExtension
         $this->labels[$label] = [];
         $jsonarr = json_encode($this->labels);
 
-        if (!file_put_contents($this->fileName, $jsonarr)) {
+        if (!file_put_contents($this->jsonFile, $jsonarr)) {
             echo '[error saving labels]';
         }
     }
@@ -225,8 +226,7 @@ class Extension extends BaseExtension
 
         $fs = new Filesystem();
         try {
-            $jsonFile = $this->app['resources']->getPath('extensionsconfig') . '/labels.json';
-            $fs->dumpFile($jsonFile, $jsonarr);
+            $fs->dumpFile($this->jsonFile, $jsonarr);
             $this->app['session']->getFlashBag()->set('success', 'Changes to the labels have been saved.');
         } catch (IOException $e) {
             $this->app['session']->getFlashBag()->set('error',
