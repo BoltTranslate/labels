@@ -31,6 +31,22 @@ The configuration file is pretty self-explanatory. If you're upgrading from a pr
    defined in the selected language? If set to `false` the extension will
    return the untranslated label for display in the browser.
 
+
+Options for setting the language
+--------------------------------
+This extensions uses the lang parameter that can be set in a number of ways:
+1. By passing it along in the request: ```example.org?lang=nl```
+
+2. By using the host name: ``` nl.example.org ```
+
+3. By prefixing a rout [as explained in the docs](https://docs.bolt.cm/howto/building-multilingual-websites#defining-routes): ``` example.org/nl/pages ```
+
+4. By extracting a value from a given locale "nl_NL" and checking whether this is a defined value in the ```languages``` config
+
+5. By using the default from the config file
+
+6. By simply overriding all of these and set it in the header of a twig template: ``` {% set lang = 'de' %} ```
+
 Usage in templates
 ------------------
 

@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
 class Extension extends BaseExtension
 {
     protected $labels;
+    protected $jsonFile;
 
     public function getName()
     {
@@ -26,6 +27,8 @@ class Extension extends BaseExtension
     public function initialize()
     {
         $this->app->before(array($this, 'before'));
+
+        $this->jsonFile = $this->app['resources']->getPath('extensionsconfig') . '/labels.json';
 
         // Twig functions
         $this->addTwigFunction('l', 'twigL');
@@ -50,33 +53,58 @@ class Extension extends BaseExtension
     }
 
     /**
-     * Set the current language
+     * Set the current language, always based on a 2-letter code
+     *
+     * This handles the following situations:
+     *
+     * 1. Set the lang param via the request: example.org?lang=nl
+     * 2. If the host name part of the FQDN, e.g. nl.example.org, matches one of the configured languages set the language to "nl"
+     * 3. If the routes are prefixed by a language code; example.org/nl/pages
+     * 4. Attempts to fetch a valid lang from the locale, "nl_NL" becomes "nl"
+     * 5. Uses the default that was set in the config file of this extension
+     *
+     * Whatever value was set, it can always be overridden in s twig template {% set lang = 'de' %}
      *
      * @param Request $request
      */
     public function before(Request $request)
     {
-        $lang = $this->config['default'];
 
-        $this->jsonFile = $this->app['resources']->getPath('extensionsconfig') . '/labels.json';
+        $lang = $request->query->get('lang');
 
-        if (!empty($_GET['lang'])) {
-            // Language has been passed explicitly as ?lang=xx
-            $lang = trim(strtolower($_GET['lang']));
-        } elseif (isset($_SERVER['REQUEST_URI'])) {
-            if ($extracted = $this->extractLanguage($_SERVER['REQUEST_URI'])) {
-                // We're on a language-specific domain
-                $lang = $extracted;
-            }
+        if (!$lang && $this->isAllowedLanguage($this->extractLanguage($request->getHost()))) {
+            $lang = $this->extractLanguage($request->getHost());
         }
 
-        if (!empty($lang) && $this->isValidLanguage($lang)) {
-            $this->app['session']->set('lang', $lang);
+        if (!$lang && $this->isAllowedLanguage(substr($request->getRequestUri(), 1, 2))) {
+            $lang = substr($request->getRequestUri(), 1, 2);
         }
-        if (is_null($this->app['session']->get('lang'))) {
-            $this->app['session']->set('lang', 'nl');
+
+        if (!$this->isValidLanguage($lang) && $this->isAllowedLanguage(substr($request->getLocale(), 0, 2))) {
+            $lang = substr($request->getLocale(), 0, 2);
         }
+
+        if (!$this->isValidLanguage($lang)) {
+            $lang = $this->config['default'];
+        }
+
+        $this->app['session']->set('lang', $lang);
         $this->setCurrentLanguage($lang);
+    }
+
+
+    /**
+     * Validates if the 2-letter language code was actually set in the extension config
+     *
+     * @param $lang
+     * @return bool
+     */
+    public function isAllowedLanguage($lang)
+    {
+        if (in_array($lang, $this->config['languages'])) {
+            return true;
+        }
+        return false;
     }
 
     public function extractLanguage($lang)
