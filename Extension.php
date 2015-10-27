@@ -173,20 +173,20 @@ class Extension extends BaseExtension
 
         $languages = array_map('strtoupper', $this->config['languages']);
 
-        $data = [];
+        $data = array();
 
         foreach ($this->labels as $label => $row) {
-            $values = [];
+            $values = array();
             foreach ($languages as $l) {
                 $values[] = $row[strtolower($l)] ?: '';
             }
-            $data[] = array_merge([$label], $values);
+            $data[] = array_merge(array($label), $values);
         }
 
-        $twigvars = [
-            'columns' => array_merge([ 'Label'], $languages),
+        $twigvars = array(
+            'columns' => array_merge(array('Label'), $languages),
             'data'    => $data
-        ];
+        );
 
         return $this->render('import_form.twig', $twigvars);
     }
@@ -194,8 +194,8 @@ class Extension extends BaseExtension
     public function addLabel($label)
     {
         $label = strtolower(trim($label));
-        $this->labels[$label] = [];
-        $jsonarr = json_encode($this->labels, JSON_PRETTY_PRINT);
+        $this->labels[$label] = array();
+        $jsonarr = json_encode($this->labels, 128); // '128' == 'JSON_PRETTY_PRINT'
 
         if (!file_put_contents($this->jsonFile, $jsonarr)) {
             echo '[error saving labels]';
@@ -210,7 +210,7 @@ class Extension extends BaseExtension
         // remove the label.
         array_shift($columns);
 
-        $arr = [];
+        $arr = array();
 
         foreach ($labels as $labelrow) {
             $key = strtolower(trim(array_shift($labelrow)));
@@ -220,7 +220,7 @@ class Extension extends BaseExtension
             }
         }
 
-        $jsonarr = json_encode($arr, JSON_PRETTY_PRINT);
+        $jsonarr = json_encode($arr, 128); // '128' == 'JSON_PRETTY_PRINT'
 
         if (strlen($jsonarr) < 50) {
             $this->app['session']->getFlashBag()->set('error', 'There was an issue encoding the file. Changes were NOT saved.');
