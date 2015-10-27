@@ -1,55 +1,64 @@
 <?php
-/**
- * Labels Extension for Bolt
- * @author Bob den Otter <bob@twokings.nl>
- */
 
 namespace Bolt\Extension\Bolt\Labels;
 
-require_once __DIR__ . '/include/Model.php';
-
-use Bolt\Application;
+use Bolt\BaseExtension;
 use Bolt\Library as Lib;
+use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 
-class Extension extends \Bolt\BaseExtension
+/**
+ * Labels Extension for Bolt
+ *
+ * @author Bob den Otter <bob@twokings.nl>
+ */
+class Extension extends BaseExtension
 {
-    public function __construct(Application $app)
-    {
-        parent::__construct($app);
-    }
+    protected $labels;
 
     public function getName()
     {
-        return "labels";
+        return 'Labels';
     }
 
     public function initialize()
     {
+        $this->app->before(array($this, 'before'));
+
+        // Twig functions
         $this->addTwigFunction('l', 'twigL');
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
+        $this->addTwigFunction('setLanguage', 'twigSetLanguage'); # Deprecated! This was the old twig function.
 
-        $this->before();
+        $root = $this->app['resources']->getUrl('bolt');
 
-        $this->boltPath = $this->app['config']->get('general/branding/path');
+        // Admin menu
+        $this->addMenuOption('Label translations', $root . 'labels', 'fa:flag');
 
-        $this->fileName = $this->app['paths']['configpath'] . '/extensions/labels.json';
-
-        $this->addMenuOption("Label translations", "$this->boltPath/labels", "fa:flag");
-
-        $this->app->get($this->boltPath . '/labels', array($this, 'translationsGET'))->bind('labels');
-        $this->app->get($this->boltPath . '/labels/list', array($this, 'listTranslations'))->bind('list_labels');
-        $this->app->post($this->boltPath . '/labels/save', array($this, 'labelsSavePost'))->bind('save_labels');
-
+        // Routess
+        $this->app->get($root . 'labels', array($this, 'translationsGET'))
+            ->bind('labels')
+        ;
+        $this->app->get($root . 'labels/list', array($this, 'listTranslations'))
+            ->bind('list_labels')
+        ;
+        $this->app->post($root . 'labels/save', array($this, 'labelsSavePost'))
+            ->bind('save_labels')
+        ;
     }
 
     /**
      * Set the current language
+     *
+     * @param Request $request
      */
-    public function before()
+    public function before(Request $request)
     {
         $lang = $this->config['default'];
+
+        $this->jsonFile = $this->app['resources']->getPath('extensionsconfig') . '/labels.json';
 
         if (!empty($_GET['lang'])) {
             // Language has been passed explicitly as ?lang=xx
@@ -72,7 +81,8 @@ class Extension extends \Bolt\BaseExtension
 
     public function extractLanguage($lang)
     {
-        if (preg_match('@^/([a-z]{2})/?@', $requestUri, $matches)) {
+        $matches = array();
+        if (preg_match('/^([a-z]{2})\./', $lang, $matches)) {
             return $matches[1];
         } else {
             return false;
@@ -81,22 +91,43 @@ class Extension extends \Bolt\BaseExtension
 
     public function loadLabels()
     {
+        $fs = new Filesystem();
 
-        try {
-            if (is_readable($this->fileName)) {
-                $labels = file_get_contents($this->fileName);
-            } else {
-                $labels = file_get_contents(__DIR__ . "/files/labels.json");
+        // Check that the user's JSON file exists, else copy in the default
+        if (!$fs->exists($this->jsonFile)) {
+            try {
+                $fs->copy($this->getBasePath() . '/files/labels.json', $this->jsonFile);
+            } catch (IOException $e) {
+                $this->app['session']->getFlashBag()->set('error',
+                    'The labels file at <tt>app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT saved, until you fix this.');
             }
-            $this->labels = json_decode($labels, true);
-        } catch (\Exception $e) {
-            $this->app['session']->getFlashBag()->set('error', 'There was an issue loading the labels.');
-            $this->labels = [];
-            return false;
         }
 
-        return true;
+        // Check the file is writable
+        try {
+            $fs->touch($this->jsonFile);
+        } catch (IOException $e) {
+            $this->app['session']->getFlashBag()->set('error',
+                'The labels file at <tt>app/config/extensions/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
+        }
 
+        // Read the contents of the file
+        try {
+            $finder = new Finder();
+            $finder
+                ->files()
+                ->name('labels.json')
+                ->in($this->app['resources']->getPath('extensionsconfig'))
+            ;
+
+            foreach ($finder->files() as $file) {
+                $this->labels = json_decode($file->getContents(), true);
+                continue;
+            }
+        } catch (\Exception $e) {
+            $this->app['session']->getFlashBag()->set('error', sprintf('There was an issue loading the labels: %s', $e->getMessage()));
+            $this->labels = false;
+        }
     }
 
     /**
@@ -125,18 +156,16 @@ class Extension extends \Bolt\BaseExtension
         $twigGlobals = $this->app['twig']->getGlobals();
         if (isset($twigGlobals['lang'])) {
             return $twigGlobals['lang'];
-        }
-        else {
+        } else {
             return null;
         }
     }
-
 
     public function translationsGET(Request $request)
     {
         $this->requireUserPermission('labels');
 
-        if (empty($this->labels)) {
+        if ($this->labels === null) {
             $this->loadLabels();
         }
 
@@ -144,28 +173,20 @@ class Extension extends \Bolt\BaseExtension
 
         $languages = array_map('strtoupper', $this->config['languages']);
 
-        $data = [];
+        $data = array();
 
-        foreach($this->labels as $label => $row) {
-            $values = [];
-            foreach($languages as $l) {
+        foreach ($this->labels as $label => $row) {
+            $values = array();
+            foreach ($languages as $l) {
                 $values[] = $row[strtolower($l)] ?: '';
             }
-            $data[] = array_merge([$label], $values);
+            $data[] = array_merge(array($label), $values);
         }
 
-        if (!file_exists($this->fileName) && !is_writable(dirname($this->fileName))) {
-            $this->app['session']->getFlashBag()->set('error',
-                'The labels file at <tt>../app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT saved, until you fix this.');
-        } else if (file_exists($this->fileName) && !is_writable($this->fileName)) {
-            $this->app['session']->getFlashBag()->set('error',
-                'The labels file at <tt>../app/config/extensions/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.');
-        }
-
-        $twigvars = [
-            'columns' => array_merge([ 'Label'], $languages),
-            'data' => $data
-        ];
+        $twigvars = array(
+            'columns' => array_merge(array('Label'), $languages),
+            'data'    => $data
+        );
 
         return $this->render('import_form.twig', $twigvars);
     }
@@ -173,11 +194,11 @@ class Extension extends \Bolt\BaseExtension
     public function addLabel($label)
     {
         $label = strtolower(trim($label));
-        $this->labels[$label] = [];
-        $jsonarr = json_encode($this->labels);
+        $this->labels[$label] = array();
+        $jsonarr = json_encode($this->labels, 128); // '128' == 'JSON_PRETTY_PRINT'
 
-        if (!file_put_contents($this->fileName, $jsonarr)) {
-            echo "[error saving labels]";
+        if (!file_put_contents($this->jsonFile, $jsonarr)) {
+            echo '[error saving labels]';
         }
     }
 
@@ -189,38 +210,33 @@ class Extension extends \Bolt\BaseExtension
         // remove the label.
         array_shift($columns);
 
-        $arr = [];
+        $arr = array();
 
-        foreach($labels as $labelrow) {
+        foreach ($labels as $labelrow) {
             $key = strtolower(trim(array_shift($labelrow)));
             $values = array_combine($columns, $labelrow);
-            $arr[$key] = $values;
+            if (!empty($key)) {
+                $arr[$key] = $values;
+            }
         }
 
-        $jsonarr = json_encode($arr);
+        $jsonarr = json_encode($arr, 128); // '128' == 'JSON_PRETTY_PRINT'
 
         if (strlen($jsonarr) < 50) {
             $this->app['session']->getFlashBag()->set('error', 'There was an issue encoding the file. Changes were NOT saved.');
             return Lib::redirect('labels');
         }
 
-        if (!file_exists($this->fileName) && !is_writable(dirname($this->fileName))) {
-            $this->app['session']->getFlashBag()->set('error',
-                'The labels file at <tt>../app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes were NOT saved.');
-        } else if (file_exists($this->fileName) && !is_writable($this->fileName)) {
+        $fs = new Filesystem();
+        try {
+            $fs->dumpFile($this->jsonFile, $jsonarr);
+            $this->app['session']->getFlashBag()->set('success', 'Changes to the labels have been saved.');
+        } catch (IOException $e) {
             $this->app['session']->getFlashBag()->set('error',
                 'The labels file at <tt>../app/config/extensions/labels.json</tt> is not writable. Changes were NOT saved.');
         }
 
-        if (!file_put_contents($this->fileName, $jsonarr)) {
-            $this->app['session']->getFlashBag()->set('error',
-                'There was an issue saving the file. Changes were NOT saved.');
-            return Lib::redirect('labels');
-        }
-
-        $this->app['session']->getFlashBag()->set('success', 'Changes to the labels have been saved.');
         return Lib::redirect('labels');
-
     }
 
     /**
@@ -228,12 +244,13 @@ class Extension extends \Bolt\BaseExtension
      */
     public function twigL($label, $lang =  false)
     {
+        $label = strtolower(trim($label));
 
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
         }
 
-        if (empty($this->labels)) {
+        if ($this->labels === null) {
             $this->loadLabels();
         }
 
@@ -251,28 +268,40 @@ class Extension extends \Bolt\BaseExtension
             if ($this->config['add_missing'] && empty($this->labels[$label])) {
                 $this->addLabel($label);
             }
-
         }
 
         return new \Twig_Markup($res, 'UTF-8');
     }
 
-    public function twigSetLanguage($lang) {
+    public function twigSetLanguage($lang)
+    {
         $this->setCurrentLanguage($lang);
         return '';
     }
 
-    public function __get($name) {
-        switch ($name) {
-            case 'currentLanguage':
-                return $this->getCurrentLanguage();
-        }
+    public function __get($name)
+    {
+        return $name === 'currentLanguage' ? $this->getCurrentLanguage() : null;
     }
 
-    private function render($template, $data) {
-        $this->app['twig.loader.filesystem']->addPath(dirname(__FILE__) . '/templates');
+    /**
+     * {@inheritDoc}
+     */
+    protected function getDefaultConfig()
+    {
+        return array(
+            'languages'    => array('en'),
+            'default'      => 'en',
+            'add_missing'  => true,
+            'use_fallback' => true
+        );
+    }
 
-        if ($this->app['config']->getWhichEnd()=='backend') {
+    private function render($template, $data)
+    {
+        $this->app['twig.loader.filesystem']->addPath(__DIR__ . '/templates');
+
+        if ($this->app['config']->getWhichEnd() === 'backend') {
             $this->app['htmlsnippets'] = true;
             $this->addCss('assets/handsontable.full.min.css');
             $this->addJavascript('assets/handsontable.full.min.js', true);

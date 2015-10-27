@@ -2,5 +2,6 @@
 
 namespace Bolt\Extension\Bolt\Labels;
 
-$extension = new Extension($app);
-$app['extensions']->register($extension);
+if (isset($app)) {
+    $app['extensions']->register(new Extension($app));
+}
