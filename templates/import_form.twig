@@ -6,8 +6,6 @@
     {% set data = [] %}
 {% endif %}
 
-{% set minimumcolumns = max(field.columns|length, field.minimumcolumns, 5) %}
-
 {#=== FIELDSET ============================================================================#}
 
 
@@ -26,7 +24,7 @@
     <div id="hot-grid" style='margin: 12px 0;'></div>
 
     <input type="hidden" name="columns" value="{{ columns|json_encode }}">
-    <input type="hidden" name="labels" id="gridfield-labels" value="{{ currentvalue }}">
+    <input type="hidden" name="labels" id="gridfield-labels" value="">
 
     <button class="btn btn-primary" disabled="disabled" id="save-button-bottom" type="submit">
         <i class='fa fa-save'></i> Save
