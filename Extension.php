@@ -219,14 +219,21 @@ class Extension extends BaseExtension
         return $this->render('import_form.twig', $twigvars);
     }
 
+    /**
+     * Add a label to the file, if it was found in the template. If the file isn't
+     * writable, fail silently, because the user will get notified when they 
+     * go the screen to edit the translations. 
+     * 
+     * @param string $label
+     */
     public function addLabel($label)
     {
         $label = strtolower(trim($label));
-        $this->labels[$label] = array();
-        $jsonarr = json_encode($this->labels, 128); // '128' == 'JSON_PRETTY_PRINT'
 
-        if (!file_put_contents($this->jsonFile, $jsonarr)) {
-            echo '[error saving labels]';
+        if (is_writable($this->jsonFile) && !isset($this->labels[$label]) ) {
+            $this->labels[$label] = array();
+            $jsonarr = json_encode($this->labels, 128); // '128' == 'JSON_PRETTY_PRINT'
+            file_put_contents($this->jsonFile, $jsonarr);
         }
     }
 
