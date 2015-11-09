@@ -40,7 +40,7 @@ class Extension extends BaseExtension
         // Admin menu
         $this->addMenuOption('Label translations', $root . 'labels', 'fa:flag');
 
-        // Routess
+        // Routes
         $this->app->get($root . 'labels', array($this, 'translationsGET'))
             ->bind('labels')
         ;
