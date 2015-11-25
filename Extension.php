@@ -35,7 +35,7 @@ class Extension extends BaseExtension
         $this->addTwigFunction('setlanguage', 'twigSetLanguage');
         $this->addTwigFunction('setLanguage', 'twigSetLanguage'); # Deprecated! This was the old twig function.
 
-        $root = $this->app['resources']->getUrl('bolt');
+        $root = $this->app['config']->get('general/branding/path') . '/';
 
         // Admin menu
         $this->addMenuOption('Label translations', $root . 'labels', 'fa:flag');
