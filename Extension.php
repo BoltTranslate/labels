@@ -206,7 +206,7 @@ class Extension extends BaseExtension
         foreach ($this->labels as $label => $row) {
             $values = array();
             foreach ($languages as $l) {
-                $values[] = $row[strtolower($l)] ?: '';
+                $values[] = $row[mb_strtolower($l)] ?: '';
             }
             $data[] = array_merge(array($label), $values);
         }
@@ -228,7 +228,7 @@ class Extension extends BaseExtension
      */
     public function addLabel($label)
     {
-        $label = strtolower(trim($label));
+        $label = mb_strtolower(trim($label));
 
         if (is_writable($this->jsonFile) && !isset($this->labels[$label]) ) {
             $this->labels[$label] = array();
@@ -239,7 +239,7 @@ class Extension extends BaseExtension
 
     public function labelsSavePost(Request $request)
     {
-        $columns = array_map('strtolower', json_decode($request->get('columns')));
+        $columns = array_map('mb_strtolower', json_decode($request->get('columns')));
         $labels = json_decode($request->get('labels'));
 
         // remove the label.
@@ -248,7 +248,7 @@ class Extension extends BaseExtension
         $arr = array();
 
         foreach ($labels as $labelrow) {
-            $key = strtolower(trim(array_shift($labelrow)));
+            $key = mb_strtolower(trim(array_shift($labelrow)));
             $values = array_combine($columns, $labelrow);
             if (!empty($key)) {
                 $arr[$key] = $values;
@@ -279,7 +279,7 @@ class Extension extends BaseExtension
      */
     public function twigL($label, $lang =  false)
     {
-        $label = strtolower(trim($label));
+        $label = mb_strtolower(trim($label));
 
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
@@ -289,14 +289,19 @@ class Extension extends BaseExtension
             $this->loadLabels();
         }
 
-        if (!empty($this->labels[$label][strtolower($lang)])) {
-            $res = $this->labels[$label][strtolower($lang)];
+        if (!empty($this->labels[$label][mb_strtolower($lang)])) {
+            $res = $this->labels[$label][mb_strtolower($lang)];
         } else {
-            $res = '<mark>' . $label . '</mark>';
+            // Only show marked labels for logged in users
+            if ($this->app['users']->getCurrentUser()) {
+                $res = '<mark>' . $label . '</mark>';
+            } else {
+                $res = $label;
+            }
 
             // Perhaps use the fallback?
-            if ($this->config['use_fallback'] && !empty($this->labels[$label][strtolower($this->config['default'])])) {
-                $res = $this->labels[$label][strtolower($this->config['default'])];
+            if ($this->config['use_fallback'] && !empty($this->labels[$label][mb_strtolower($this->config['default'])])) {
+                $res = $this->labels[$label][mb_strtolower($this->config['default'])];
             }
 
             // perhaps add it to the labels file?
