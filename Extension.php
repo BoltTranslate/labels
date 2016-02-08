@@ -38,7 +38,7 @@ class Extension extends BaseExtension
         $root = $this->app['config']->get('general/branding/path') . '/';
 
         // Admin menu
-        if (!isset($this->config['show_menu']) || !(isset($this->config['show_menu']) && $this->config['show_menu'] == false)) {
+        if ($this->config['show_menu']) {
             $this->addMenuOption('Label translations', $root . 'labels', 'fa:flag');
         }
 
@@ -332,6 +332,7 @@ class Extension extends BaseExtension
     protected function getDefaultConfig()
     {
         return array(
+            'show_menu'    => true,
             'languages'    => array('en'),
             'default'      => 'en',
             'add_missing'  => true,
