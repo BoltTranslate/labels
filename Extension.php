@@ -38,7 +38,9 @@ class Extension extends BaseExtension
         $root = $this->app['config']->get('general/branding/path') . '/';
 
         // Admin menu
-        $this->addMenuOption('Label translations', $root . 'labels', 'fa:flag');
+        if (!isset($this->config['show_menu']) || !(isset($this->config['show_menu']) && $this->config['show_menu'] == false)) {
+            $this->addMenuOption('Label translations', $root . 'labels', 'fa:flag');
+        }
 
         // Routes
         $this->app->get($root . 'labels', array($this, 'translationsGET'))

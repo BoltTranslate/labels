@@ -9,3 +9,6 @@ add_missing: true
 
 # Fallback to the 'default language', if the label is not defined in the selected language?
 use_fallback: true
+
+# Option to hide the backend menuitem
+#show_menu: false
