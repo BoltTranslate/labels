@@ -129,7 +129,7 @@ class Extension extends BaseExtension
                 $fs->copy($this->getBasePath() . '/files/labels.json', $this->jsonFile);
             } catch (IOException $e) {
                 $this->app['session']->getFlashBag()->set('error',
-                    'The labels file at <tt>app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT saved, until you fix this.');
+                    'The labels file at <tt>app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT be saved until you fix this.');
             }
         }
 
