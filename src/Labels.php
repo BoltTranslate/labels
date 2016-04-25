@@ -44,7 +44,10 @@ class Labels
         // Check that the user's JSON file exists, else copy in the default
         if (!$this->filesystemManager->has('config://extensions/labels.json')) {
             $distPath = $this->filesystemManager->getFile('extensions://' . $this->extBasePath)->getPath();
-            $this->filesystemManager->copy('extensions://' . $distPath, 'config://extensions/labels.json');
+            $this->filesystemManager->copy(
+                    'extensions://' . $distPath . '/files/labels.json',
+                    'config://extensions/labels.json'
+                );
             try {
             } catch (IOException $e) {
                 $this->session->getFlashBag()->set(
