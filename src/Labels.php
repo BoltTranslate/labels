@@ -127,7 +127,7 @@ class Labels
         }
 
         try {
-            $this->filesystemManager->write('config://extensions/labels.json', $jsonArray);
+            $this->filesystemManager->update('config://extensions/labels.json', $jsonArray);
             $this->session->getFlashBag()->set('success', 'Changes to the labels have been saved.');
         } catch (IOException $e) {
             $this->session->getFlashBag()->set(
