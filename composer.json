@@ -2,40 +2,47 @@
     "name": "bolt/labels",
     "description": "Database-backed translation labels",
     "type": "bolt-extension",
-	"minimum-stability" : "dev",
-	"prefer-stable" : true,
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "require": {
-        "bolt/bolt": ">=2.0.0,<3.0.0"
+        "bolt/bolt": "^3.0"
     },
-    "require-dev" : {
-        "phpunit/phpunit" : "^4.7"
+    "require-dev": {
+        "phpunit/phpunit": "^4.7"
     },
     "license": "MIT",
     "authors": [
-        {"name": "Two Kings", "email": "info@twokings.nl"},
-        {"name": "Bob den Otter", "email": "bob@twokings.nl"},
-        {"name": "Tobias Dammers", "email": "tdammers@twokings.nl"}
+        {
+            "name": "Two Kings",
+            "email": "info@twokings.nl"
+        },
+        {
+            "name": "Bob den Otter",
+            "email": "bob@twokings.nl"
+        },
+        {
+            "name": "Tobias Dammers",
+            "email": "tdammers@twokings.nl"
+        }
     ],
     "autoload": {
-        "files": [
-            "init.php"
-        ],
         "psr-4": {
-            "Bolt\\Extension\\Bolt\\Labels\\": ""
+            "Bolt\\Extension\\Bolt\\Labels\\": "src"
         }
     },
-    "autoload-dev" : {
-        "psr-4" : {
-            "Bolt\\Tests\\" : {
-                "Bolt\\Extension\\Bolt\\Labels\\Tests\\" : "tests/",
-                "Bolt\\Tests\\" : "vendor/bolt/bolt/tests/phpunit/unit/"
+    "autoload-dev": {
+        "psr-4": {
+            "Bolt\\Tests\\": {
+                "Bolt\\Extension\\Bolt\\Labels\\Tests\\": "tests/",
+                "Bolt\\Tests\\": "vendor/bolt/bolt/tests/phpunit/unit/"
             }
         }
     },
     "extra": {
-        "bolt-assets" : "assets/",
-        "branch-alias" : {
-            "dev-master" : "2.1.*-dev"
+        "bolt-assets": "web",
+        "bolt-class": "Bolt\\Extension\\Bolt\\Labels\\LabelsExtension",
+        "branch-alias": {
+            "dev-master": "3.0.x-dev"
         }
     }
 }
