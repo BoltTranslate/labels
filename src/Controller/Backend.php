@@ -61,11 +61,13 @@ class Backend implements ControllerProviderInterface
         $extension = $app['extensions']->get('Bolt/Labels');
         $dir = $extension->getWebDirectory()->getPath();
 
-        $handsCss = (new Stylesheet('/' . $dir . '/handsontable.full.min.css'))->setZone(Zone::BACKEND)->setLate(false);
-        $handsJs = (new JavaScript('/' . $dir . '/handsontable.full.min.js'))->setZone(Zone::BACKEND)->setLate(true);
+        $handsonCss = (new Stylesheet('/' . $dir . '/handsontable.full.min.css'))->setZone(Zone::BACKEND)->setLate(false);
+        $handsonJs = (new JavaScript('/' . $dir . '/handsontable.full.min.js'))->setZone(Zone::BACKEND)->setLate(true);
+        $underscoreJs = (new JavaScript('/' . $dir . '/underscore-min.js'))->setZone(Zone::BACKEND)->setLate(true);
 
-        $app['asset.queue.file']->add($handsCss);
-        $app['asset.queue.file']->add($handsJs);
+        $app['asset.queue.file']->add($handsonCss);
+        $app['asset.queue.file']->add($handsonJs);
+        $app['asset.queue.file']->add($underscoreJs);
 
         $user   = $app['users']->getCurrentUser();
         if ($app['permissions']->isAllowed('labels', $user)) {
