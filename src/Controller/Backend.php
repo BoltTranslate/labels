@@ -43,6 +43,7 @@ class Backend implements ControllerProviderInterface
 
         $ctr->get('/', [$this, 'translations'])
             ->bind('labels')
+            ->before([$this, 'before'])
         ;
         $ctr->get('/list', [$this, 'listTranslations'])
             ->bind('list_labels')
@@ -57,7 +58,7 @@ class Backend implements ControllerProviderInterface
     public function before(Request $request, Application $app)
     {
         /** @var LabelsExtension $extension */
-        $extension = $app['extensions']->get('Bolt/Members');
+        $extension = $app['extensions']->get('Bolt/Labels');
         $dir = $extension->getWebDirectory()->getPath();
 
         $handsCss = (new Stylesheet('/' . $dir . '/handsontable.full.min.css'))->setZone(Zone::BACKEND)->setLate(false);
@@ -67,7 +68,7 @@ class Backend implements ControllerProviderInterface
         $app['asset.queue.file']->add($handsJs);
 
         $user   = $app['users']->getCurrentUser();
-        if ($app['users']->hasRole($user['id'], 'labels')) {
+        if ($app['permissions']->isAllowed('labels', $user)) {
             return null;
         }
 
