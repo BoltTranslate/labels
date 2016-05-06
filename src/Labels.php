@@ -2,7 +2,9 @@
 
 namespace Bolt\Extension\Bolt\Labels;
 
+use Bolt\Filesystem\Exception\FileNotFoundException;
 use Bolt\Filesystem\FilesystemInterface;
+use Bolt\Filesystem\Handler\JsonFile;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -101,11 +103,21 @@ class Labels
     public function addLabel($label)
     {
         $label = mb_strtolower(trim($label));
+        $languages = $this->config->getLanguages();
+
+        /** @var JsonFile $labelsFile */
+        $labelsFile = $this->filesystemManager->get('config://extensions/labels.json', new JsonFile());
+        try {
+            $jsonArray = $labelsFile->parse();
+        } catch (FileNotFoundException $e) {
+            $jsonArray = [];
+        }
+
+        $jsonArray[$label] = array_fill_keys($languages, '');
+        ksort($jsonArray);
 
         try {
-            $labels[$label] = [];
-            $jsonArray = json_encode($labels, JSON_PRETTY_PRINT);
-            $this->filesystemManager->write('config://extensions/labels.json', $jsonArray);
+            $labelsFile->dump($jsonArray);
         } catch (IOException $e) {
             // Computer says "No!"
         }
