@@ -132,7 +132,10 @@ class LabelsExtension extends SimpleExtension
             $lang = $config['default'];
         }
 
-        $app['session']->set('lang', $lang);
+        if($app['session']->isStarted()){
+            $app['session']->set('lang', $lang);
+        }
+
         $this->setCurrentLanguage($lang);
     }
 
