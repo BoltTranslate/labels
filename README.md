@@ -118,5 +118,5 @@ Tip: To modify the output of labels, you can use `capitalize`, `lower` and
 
 Tip: Always keep a backup of the translation file. You never know what might
 happen, and if it (for some reason) gets corrupted, it will be good to have a
-recent backup available.
+recent backup available. By default the file is located under app/config/extensions/labels.json.
 
