@@ -84,7 +84,8 @@ class LabelsExtension extends SimpleExtension
         return [
             (new MenuEntry('labels', 'labels'))
                 ->setLabel('Label translations')
-                ->setIcon('fa:flag'),
+                ->setIcon('fa:flag')
+                ->setPermission('labels'),
         ];
     }
 
