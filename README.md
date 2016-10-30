@@ -34,6 +34,21 @@ see what's been changed.
    defined in the selected language? If set to `false` the extension will
    return the untranslated label for display in the browser.
 
+Permissions
+-----------
+
+To control which users can modify the labels, this extension uses Bolt's 
+built-in permission system. The labels configuration screen can not be accessed 
+by users without the `labels` permission. For any users other than those with 
+'root' roles, you'll need to add the permission to your `permissions.yml` file, 
+like this: 
+
+```
+global: 
+    …
+    labels: [ admin, developer, chief-editor ]   
+    …
+```    
 
 Options for setting the language
 --------------------------------
