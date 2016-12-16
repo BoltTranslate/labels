@@ -81,6 +81,12 @@ class LabelsExtension extends SimpleExtension
      */
     protected function registerMenuEntries()
     {
+        $app = $this->getContainer();
+
+        if (!$app['labels.config']->isShowMenu()) {
+            return [];
+        }
+
         return [
             (new MenuEntry('labels', 'labels'))
                 ->setLabel('Label translations')
