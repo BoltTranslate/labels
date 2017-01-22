@@ -8,6 +8,7 @@ use Bolt\Controller\Zone;
 use Bolt\Extension\Bolt\Labels\Config;
 use Bolt\Extension\Bolt\Labels\Labels;
 use Bolt\Extension\Bolt\Labels\LabelsExtension;
+use Bolt\Helpers\Str;
 use Bolt\Library as Lib;
 use Silex\Application;
 use Silex\ControllerCollection;
@@ -122,7 +123,7 @@ class Backend implements ControllerProviderInterface
         array_shift($columns);
 
         foreach ($labels as $labelrow) {
-            $key = mb_strtolower(trim(array_shift($labelrow)));
+            $key = $app['labels']->cleanLabel(array_shift($labelrow));
             $values = array_combine($columns, $labelrow);
             if (!empty($key)) {
                 $arr[$key] = $values;

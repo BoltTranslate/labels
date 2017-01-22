@@ -157,7 +157,7 @@ class LabelsExtension extends SimpleExtension
     public function twigL($label, $lang = false)
     {
         $app = $this->getContainer();
-        $label = mb_strtolower(trim($label));
+        $label = $app['labels']->cleanLabel($label);
 
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
