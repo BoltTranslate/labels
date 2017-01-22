@@ -4,6 +4,7 @@ namespace Bolt\Extension\Bolt\Labels;
 
 use Bolt\Filesystem\Exception\FileNotFoundException;
 use Bolt\Filesystem\FilesystemInterface;
+use Bolt\Helpers\Str;
 use Bolt\Filesystem\Handler\JsonFile;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -102,7 +103,7 @@ class Labels
      */
     public function addLabel($label)
     {
-        $label = mb_strtolower(trim($label));
+        $label = $this->cleanLabel($label);
         $languages = $this->config->getLanguages();
 
         /** @var JsonFile $labelsFile */
@@ -113,13 +114,15 @@ class Labels
             $jsonArray = [];
         }
 
-        $jsonArray[$label] = array_fill_keys($languages, '');
-        ksort($jsonArray);
+        if (!isset($jsonArray[$label])) {
+            $jsonArray[$label] = array_fill_keys($languages, '');
+            ksort($jsonArray);
 
-        try {
-            $labelsFile->dump($jsonArray);
-        } catch (IOException $e) {
-            // Computer says "No!"
+            try {
+                $labelsFile->dump($jsonArray);
+            } catch (IOException $e) {
+                // Computer says "No!"
+            }
         }
     }
 
@@ -150,9 +153,22 @@ class Labels
     }
 
     /**
+     * Sanitize the label, for lookup as well as storage.
+     *
+     * @param string $label
+     *
+     * @return string
+     */
+    public function cleanLabel($label)
+    {
+        return mb_strtolower(trim(Str::makeSafe(strip_tags($label))));
+    }
+
+
+    /**
      * Validates if the 2-letter language code was actually set in the extension config
      *
-     * @param $lang
+     * @param string $lang
      *
      * @return bool
      */
