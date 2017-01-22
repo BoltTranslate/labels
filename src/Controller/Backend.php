@@ -6,7 +6,6 @@ use Bolt\Asset\File\JavaScript;
 use Bolt\Asset\File\Stylesheet;
 use Bolt\Controller\Zone;
 use Bolt\Extension\Bolt\Labels\Config;
-use Bolt\Extension\Bolt\Labels\Labels;
 use Bolt\Extension\Bolt\Labels\LabelsExtension;
 use Bolt\Library as Lib;
 use Silex\Application;
