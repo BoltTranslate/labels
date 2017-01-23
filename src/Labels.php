@@ -161,7 +161,9 @@ class Labels
      */
     public function cleanLabel($label)
     {
-        return mb_strtolower(trim(Str::makeSafe(strip_tags($label))));
+        $label = Str::makeSafe(strip_tags($label), false, ':');
+
+        return mb_strtolower(trim($label));
     }
 
 
