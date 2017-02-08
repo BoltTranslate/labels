@@ -69,6 +69,33 @@ jQuery(document).ready(function($) {
         }
     }
 
+    // Enables the confirm dialog when labels have been modified 
+    $('#labels-form').on('change', function(){
+        window.onbeforeunload = confirmOnPageExit;
+    });
+
+    // Disables the confirm dialog when saving the changes
+    $('#save-button, #save-button-bottom').click(function(){
+        window.onbeforeunload = null;
+    }); 
+
+    var confirmOnPageExit = function (e) 
+    {
+    // If we haven't been passed the event get the window.event
+    e = e || window.event;
+
+    var message = 'Any text will block the navigation and display a prompt';
+
+    // For IE6-8 and Firefox prior to version 4
+    if (e) 
+    {
+        e.returnValue = message;
+    }
+
+    // For Chrome, Safari, IE8+ and Opera 12+
+    return message;
+    };
+
 });
 </script>
 
