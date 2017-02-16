@@ -58,11 +58,11 @@ class Backend implements ControllerProviderInterface
     {
         /** @var LabelsExtension $extension */
         $extension = $app['extensions']->get('Bolt/Labels');
-        $dir = $extension->getWebDirectory()->getPath();
+        $dir = $app['paths']['root'] . $extension->getWebDirectory()->getPath();
 
-        $handsonCss = (new Stylesheet('/' . $dir . '/handsontable.full.min.css'))->setZone(Zone::BACKEND)->setLate(false);
-        $handsonJs = (new JavaScript('/' . $dir . '/handsontable.full.min.js'))->setZone(Zone::BACKEND)->setLate(true);
-        $underscoreJs = (new JavaScript('/' . $dir . '/underscore-min.js'))->setZone(Zone::BACKEND)->setLate(true);
+        $handsonCss = (new Stylesheet($dir . '/handsontable.full.min.css'))->setZone(Zone::BACKEND)->setLate(false);
+        $handsonJs = (new JavaScript($dir . '/handsontable.full.min.js'))->setZone(Zone::BACKEND)->setLate(true);
+        $underscoreJs = (new JavaScript($dir . '/underscore-min.js'))->setZone(Zone::BACKEND)->setLate(true);
 
         $app['asset.queue.file']->add($handsonCss);
         $app['asset.queue.file']->add($handsonJs);
