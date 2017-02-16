@@ -20,6 +20,8 @@ class Labels
     private $filesystemManager;
     /** @var string */
     private $extBasePath;
+    /** @var array */
+    private $loadedlabels = [];
 
     /**
      * Constructor.
@@ -42,7 +44,9 @@ class Labels
      */
     public function getLabels()
     {
-        $labels = [];
+        if (!empty($this->loadedlabels)) {
+            return $this->loadedlabels;
+        }
 
         // Check that the user's JSON file exists, else copy in the default
         if (!$this->filesystemManager->has('config://extensions/labels.json')) {
@@ -81,7 +85,7 @@ class Labels
 
             /** @var \Bolt\Filesystem\Handler\File $file */
             foreach ($finder->files() as $file) {
-                $labels = json_decode($file->read(), true);
+                $this->loadedlabels = json_decode($file->read(), true);
                 continue;
             }
         } catch (\Exception $e) {
@@ -91,7 +95,7 @@ class Labels
             );
         }
 
-        return $labels;
+        return $this->loadedlabels;
     }
 
     /**
