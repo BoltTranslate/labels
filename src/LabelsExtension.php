@@ -15,6 +15,8 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class LabelsExtension extends SimpleExtension
 {
+    /** @var string */
+    private $currentlanguage = null;
     protected function registerServices(Application $app)
     {
         $app['labels'] = $app->share(
@@ -259,6 +261,7 @@ class LabelsExtension extends SimpleExtension
     private function setCurrentLanguage($lang)
     {
         if ($this->isValidLanguage($lang)) {
+            $this->currentlanguage = $lang;
             $app = $this->getContainer();
             $app['twig']->addGlobal('lang', $lang);
         }
@@ -271,12 +274,19 @@ class LabelsExtension extends SimpleExtension
      */
     private function getCurrentLanguage()
     {
-        $app = $this->getContainer();
-        $twigGlobals = $app['twig']->getGlobals();
-        if (isset($twigGlobals['lang'])) {
-            return $twigGlobals['lang'];
+        if (!empty($this->currentlanguage)) {
+            $lang = $this->currentlanguage;
         } else {
-            return null;
+            $app = $this->getContainer();
+            $twigGlobals = $app['twig']->getGlobals();
+            if (isset($twigGlobals['lang'])) {
+                $lang = $twigGlobals['lang'];
+            } else {
+                $lang = null;
+            }
+            $this->currentlanguage = $lang;
         }
+
+        return $lang;
     }
 }
