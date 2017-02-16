@@ -17,6 +17,7 @@ class LabelsExtension extends SimpleExtension
 {
     /** @var string */
     private $currentlanguage = null;
+
     protected function registerServices(Application $app)
     {
         $app['labels'] = $app->share(
