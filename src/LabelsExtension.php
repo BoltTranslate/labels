@@ -5,6 +5,7 @@ namespace Bolt\Extension\Bolt\Labels;
 use Bolt\Controller\Zone;
 use Bolt\Extension\SimpleExtension;
 use Bolt\Menu\MenuEntry;
+use Bolt\Version;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -74,8 +75,13 @@ class LabelsExtension extends SimpleExtension
     {
         $app = $this->getContainer();
 
+        $baseUrl = Version::compare('3.2.999', '<')
+            ? '/extensions/labels'
+            : '/extend/labels'
+        ;
+
         return [
-            'extend/labels' => $app['labels.controller.backend'],
+            $baseUrl => $app['labels.controller.backend'],
         ];
     }
 
