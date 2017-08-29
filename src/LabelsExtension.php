@@ -168,17 +168,23 @@ class LabelsExtension extends SimpleExtension
         $app = $this->getContainer();
         $label = $app['labels']->cleanLabel($label);
 
+        // Clean language codes
+        $lang = mb_strtolower($lang);
+        $defaultLang = mb_strtolower($app['labels.config']->getDefault());
+
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
         }
 
+
         $labels = $app['labels']->getLabels();
-        if (!empty($labels[$label][mb_strtolower($lang)])) {
-            $res = $labels[$label][mb_strtolower($lang)];
+        if (!empty($labels[$label][$lang])) {
+            $res = $labels[$label][$lang];
         } else {
             $app = $this->getContainer();
             // Only show marked labels for logged in users
-            if ($app['users']->getCurrentUser()) {
+            // And if the language is not the default lang
+            if ($app['users']->getCurrentUser() && $lang != $defaultLang ) {
                 $res = '<mark>' . $label . '</mark>';
             } else {
                 $res = $label;
