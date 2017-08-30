@@ -15,7 +15,7 @@
 
 {% block page_main %}
 
-<form action="{{ path('save_labels') }}" method="POST" enctype="multipart/form-data">
+<form id="labels-form" action="{{ path('save_labels') }}" method="POST" enctype="multipart/form-data">
 
     <button class="btn btn-primary" disabled="disabled" id="save-button" type="submit">
         <i class='fa fa-save'></i> Save
@@ -68,6 +68,27 @@ jQuery(document).ready(function($) {
             $('#save-button, #save-button-bottom').removeAttr('disabled');
         }
     }
+
+    // Enables the confirm dialog when labels have been modified 
+    $('#labels-form').on('change', function(){
+        window.onbeforeunload = confirmOnPageExit;
+    });
+
+    // Disables the confirm dialog when saving the changes
+    $('#save-button, #save-button-bottom').click(function(){
+        window.onbeforeunload = null;
+    }); 
+
+    var confirmOnPageExit = function (e) 
+    {
+    // If we haven't been passed the event get the window.event
+    e = e || window.event;
+
+    var message = 'This page is asking you to confirm that you want to leave - data you have entered may not be saved.';
+
+    // For Chrome, Safari, IE8+ and Opera 12+
+    return message;
+    };
 
 });
 </script>
