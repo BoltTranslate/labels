@@ -90,7 +90,7 @@ class Backend implements ControllerProviderInterface
         foreach ($labels as $label => $row) {
             $values = [];
             foreach ($languages as $l) {
-                $values[] = $row[mb_strtolower($l)] ?: '';
+                $values[] = isset($row[mb_strtolower($l)]) ? $row[mb_strtolower($l)] : '';
             }
             $data[] = array_merge([$label], $values);
         }
