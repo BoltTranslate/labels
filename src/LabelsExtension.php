@@ -40,8 +40,8 @@ class LabelsExtension extends SimpleExtension
         );
 
         $app['labels.controller.backend'] = $app->share(
-            function ($app) {
-                return new Controller\Backend($app['labels.config']);
+            function () {
+                return new Controller\Backend();
             }
         );
 
