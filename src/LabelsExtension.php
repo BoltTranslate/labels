@@ -18,7 +18,7 @@ use Twig\Markup;
 class LabelsExtension extends SimpleExtension
 {
     /** @var string */
-    private $currentlanguage = null;
+    private $currentLanguage;
 
     protected function registerServices(Application $app)
     {
@@ -239,9 +239,9 @@ class LabelsExtension extends SimpleExtension
         $matches = [];
         if (preg_match('/^([a-z]{2})\./', $lang, $matches)) {
             return $matches[1];
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -271,7 +271,7 @@ class LabelsExtension extends SimpleExtension
     private function setCurrentLanguage($lang)
     {
         if ($this->isValidLanguage($lang)) {
-            $this->currentlanguage = $lang;
+            $this->currentLanguage = $lang;
             $app = $this->getContainer();
             $app['twig']->addGlobal('lang', $lang);
         }
@@ -284,19 +284,17 @@ class LabelsExtension extends SimpleExtension
      */
     private function getCurrentLanguage()
     {
-        if (!empty($this->currentlanguage)) {
-            $lang = $this->currentlanguage;
+        if ($this->currentLanguage !== null) {
+            return $this->currentLanguage;
+        }
+        $app = $this->getContainer();
+        $twigGlobals = $app['twig']->getGlobals();
+        if (isset($twigGlobals['lang'])) {
+            $lang = $twigGlobals['lang'];
         } else {
-            $app = $this->getContainer();
-            $twigGlobals = $app['twig']->getGlobals();
-            if (isset($twigGlobals['lang'])) {
-                $lang = $twigGlobals['lang'];
-            } else {
-                $lang = null;
-            }
-            $this->currentlanguage = $lang;
+            $lang = null;
         }
 
-        return $lang;
+        return $this->currentLanguage = $lang;
     }
 }
