@@ -8,6 +8,7 @@ use Bolt\Menu\MenuEntry;
 use Bolt\Version;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
+use Twig\Markup;
 
 /**
  * Labels Extension for Bolt
@@ -161,7 +162,7 @@ class LabelsExtension extends SimpleExtension
      * @param string  $label
      * @param boolean $lang
      *
-     * @return \Twig_Markup
+     * @return Markup
      */
     public function twigL($label, $lang = false)
     {
@@ -197,7 +198,7 @@ class LabelsExtension extends SimpleExtension
             }
         }
 
-        return new \Twig_Markup($res, 'UTF-8');
+        return new Markup($res, 'UTF-8');
     }
 
     /**
@@ -247,6 +248,8 @@ class LabelsExtension extends SimpleExtension
      * Validate a two-letter language code.
      *
      * @param string $lang
+     *
+     * @return int
      */
     private function isValidLanguage($lang)
     {
