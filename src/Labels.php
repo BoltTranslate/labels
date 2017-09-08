@@ -44,22 +44,22 @@ class Labels
      */
     public function getLabels()
     {
-        if (!empty($this->loadedlabels)) {
+        if (!$this->loadedlabels) {
             return $this->loadedlabels;
         }
 
         // Check that the user's JSON file exists, else copy in the default
         if (!$this->filesystemManager->has('config://extensions/labels.json')) {
             $distPath = $this->filesystemManager->getFile('extensions://' . $this->extBasePath)->getPath();
-            $this->filesystemManager->copy(
+            try {
+                $this->filesystemManager->copy(
                     'extensions://' . $distPath . '/files/labels.json',
                     'config://extensions/labels.json'
                 );
-            try {
             } catch (IOException $e) {
                 $this->session->getFlashBag()->set(
                     'error',
-                    'The labels file at <tt>app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT be saved until you fix this.'
+                    'The labels file at <code>config://extensions/labels.json</code> does not exist, and can not be created. Changes can NOT be saved until you fix this.'
                 );
             }
         }
@@ -70,7 +70,7 @@ class Labels
         } catch (IOException $e) {
             $this->session->getFlashBag()->set(
                 'error',
-                'The labels file at <tt>app/config/extensions/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.'
+                'The labels file at <code>config://extensions/labels.json</code> is not writable. Changes can NOT saved, until you fix this.'
             );
         }
 
@@ -151,7 +151,7 @@ class Labels
         } catch (IOException $e) {
             $this->session->getFlashBag()->set(
                 'error',
-                'The labels file at <tt>../app/config/extensions/labels.json</tt> is not writable. Changes were NOT saved.'
+                'The labels file at <code>config://extensions/labels.json</code> is not writable. Changes were NOT saved.'
             );
         }
     }
