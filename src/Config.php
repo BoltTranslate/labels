@@ -2,9 +2,11 @@
 
 namespace Bolt\Extension\Bolt\Labels;
 
+use Bolt\Collection\Bag;
+
 class Config
 {
-    /** @var array */
+    /** @var Bag */
     protected $languages;
     /** @var string */
     protected $default;
@@ -22,7 +24,7 @@ class Config
      */
     public function __construct(array $config)
     {
-        $this->languages = $config['languages'];
+        $this->languages = Bag::from($config['languages']);
         $this->default = $config['default'];
         $this->add_missing = $config['add_missing'];
         $this->use_fallback = $config['use_fallback'];
@@ -30,7 +32,7 @@ class Config
     }
 
     /**
-     * @return array
+     * @return Bag
      */
     public function getLanguages()
     {

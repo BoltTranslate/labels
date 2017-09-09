@@ -2,6 +2,7 @@
 
 namespace Bolt\Extension\Bolt\Labels;
 
+use Bolt\Collection\MutableBag;
 use Bolt\Filesystem\Exception\FileNotFoundException;
 use Bolt\Filesystem\Exception\ParseException;
 use Bolt\Filesystem\FilesystemInterface;
@@ -21,7 +22,7 @@ class Labels
     private $filesystemManager;
     /** @var string */
     private $extBasePath;
-    /** @var array */
+    /** @var MutableBag */
     private $loadedLabels;
 
     /**
@@ -41,7 +42,7 @@ class Labels
     }
 
     /**
-     * @return array
+     * @return MutableBag
      */
     public function getLabels()
     {
@@ -64,7 +65,7 @@ class Labels
                 );
             }
 
-            return $this->loadedLabels = [];
+            return $this->loadedLabels = MutableBag::from([]);
         }
 
         /** @var JsonFile $jsonFile */
@@ -72,15 +73,15 @@ class Labels
 
         // Read the contents of the file
         try {
-            $this->loadedLabels = $jsonFile->parse();
+            $this->loadedLabels = MutableBag::from($jsonFile->parse());
         } catch (ParseException $e) {
-            $this->loadedLabels = [];
+            $this->loadedLabels = MutableBag::from([]);
             $this->session->getFlashBag()->set(
                 'error',
                 sprintf('There was an issue loading the labels: %s', $e->getMessage())
             );
         } catch (IOException $e) {
-            $this->loadedLabels = [];
+            $this->loadedLabels = MutableBag::from([]);
             $this->session->getFlashBag()->set(
                 'error',
                 'The labels file at <code>config://extensions/labels.json</code> is not readable. Changes can NOT saved, until you fix this.'
@@ -103,22 +104,24 @@ class Labels
         $languages = $this->config->getLanguages();
 
         /** @var JsonFile $labelsFile */
-        $labelsFile = $this->filesystemManager->get('config://extensions/labels.json', new JsonFile());
+        $labelsFile = $this->filesystemManager->getFile('config://extensions/labels.json');
         try {
             $jsonArray = $labelsFile->parse();
         } catch (FileNotFoundException $e) {
             $jsonArray = [];
         }
 
-        if (!isset($jsonArray[$label])) {
-            $jsonArray[$label] = array_fill_keys($languages, '');
-            ksort($jsonArray);
+        $jsonArray = MutableBag::from($jsonArray);
+        if ($jsonArray->hasItem($label)) {
+            // Quietly shake our head at whomever called us, and exit silently … To the pub!
+            return;
+        }
+        $jsonArray[$label] = array_fill_keys($languages->toArray(), '');
 
-            try {
-                $labelsFile->dump($jsonArray);
-            } catch (IOException $e) {
-                // Computer says "No!"
-            }
+        try {
+            $labelsFile->dump($jsonArray->sortKeys());
+        } catch (IOException $e) {
+            // Computer says "No!"
         }
     }
 
@@ -172,10 +175,6 @@ class Labels
      */
     public function isAllowedLanguage($lang)
     {
-        if (in_array($lang, $this->config->getLanguages())) {
-            return true;
-        }
-
-        return false;
+        return $this->config->getLanguages()->hasItem($lang);
     }
 }
