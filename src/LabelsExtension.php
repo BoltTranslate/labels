@@ -121,26 +121,25 @@ class LabelsExtension extends SimpleExtension
      *
      * @param Request     $request
      * @param Application $app
-     *
-     * @return null
      */
     public function before(Request $request, Application $app)
     {
         if (!Zone::isFrontend($request)) {
-            return null;
+            return;
         }
 
         $lang = $request->query->get('lang');
+        $labels = $app['labels'];
 
-        if (!$lang && $app['labels']->isAllowedLanguage($this->extractLanguage($request->getHost()))) {
+        if (!$lang && $labels->isAllowedLanguage($this->extractLanguage($request->getHost()))) {
             $lang = $this->extractLanguage($request->getHost());
         }
 
-        if (!$lang && $app['labels']->isAllowedLanguage(substr($request->getRequestUri(), 1, 2))) {
+        if (!$lang && $labels->isAllowedLanguage(substr($request->getRequestUri(), 1, 2))) {
             $lang = substr($request->getRequestUri(), 1, 2);
         }
 
-        if (!$this->isValidLanguage($lang) && $app['labels']->isAllowedLanguage(substr($request->getLocale(), 0, 2))) {
+        if (!$this->isValidLanguage($lang) && $labels->isAllowedLanguage(substr($request->getLocale(), 0, 2))) {
             $lang = substr($request->getLocale(), 0, 2);
         }
 
@@ -167,17 +166,18 @@ class LabelsExtension extends SimpleExtension
     public function twigL($label, $lang = false)
     {
         $app = $this->getContainer();
-        $label = $app['labels']->cleanLabel($label);
+        $config = $app['labels.config'];
+        $labels = $app['labels'];
+        $label = $labels->cleanLabel($label);
 
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
         }
 
-        $labels = $app['labels']->getLabels();
-        if (!empty($labels[$label][mb_strtolower($lang)])) {
-            $res = $labels[$label][mb_strtolower($lang)];
+        $savedLabels = $labels->getLabels();
+        if (!empty($savedLabels[$label][mb_strtolower($lang)])) {
+            $res = $savedLabels[$label][mb_strtolower($lang)];
         } else {
-            $app = $this->getContainer();
             // Only show marked labels for logged in users
             if ($app['users']->getCurrentUser()) {
                 $res = '<mark>' . $label . '</mark>';
@@ -186,15 +186,15 @@ class LabelsExtension extends SimpleExtension
             }
 
             // Perhaps use the fallback?
-            $default = mb_strtolower($app['labels.config']->getDefault());
-            if ($app['labels.config']->isUseFallback() && !empty($labels[$label][$default])
+            $default = mb_strtolower($config->getDefault());
+            if ($config->isUseFallback() && !empty($savedLabels[$label][$default])
             ) {
-                $res = $labels[$label][$default];
+                $res = $savedLabels[$label][$default];
             }
 
             // perhaps add it to the labels file?
-            if ($app['labels.config']->isAddMissing() && empty($labels[$label])) {
-                $app['labels']->addLabel($label);
+            if ($config->isAddMissing() && empty($savedLabels[$label])) {
+                $labels->addLabel($label);
             }
         }
 
