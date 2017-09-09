@@ -3,6 +3,8 @@
 namespace Bolt\Extension\Bolt\Labels;
 
 use Bolt\Collection\MutableBag;
+use Bolt\Common\Exception\DumpException;
+use Bolt\Common\Json;
 use Bolt\Filesystem\Exception\FileNotFoundException;
 use Bolt\Filesystem\Exception\ParseException;
 use Bolt\Filesystem\FilesystemInterface;
@@ -132,12 +134,12 @@ class Labels
      */
     public function saveLabels(array $jsonString)
     {
-        $jsonArray = json_encode($jsonString, JSON_PRETTY_PRINT);
-        if (strlen($jsonArray) < 50) {
-            $this->session->getFlashBag()->set(
-                'error',
-                'There was an issue encoding the file. Changes were NOT saved.'
-            );
+        try {
+            $jsonArray = Json::dump($jsonString, Json::HUMAN);
+        } catch (DumpException $e) {
+            $this->session->getFlashBag()->set('error', 'There was an issue encoding the file. Changes were NOT saved.');
+
+            return;
         }
 
         try {

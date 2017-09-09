@@ -6,6 +6,8 @@ use Bolt\Asset\File\JavaScript;
 use Bolt\Asset\File\Stylesheet;
 use Bolt\Collection\Bag;
 use Bolt\Collection\MutableBag;
+use Bolt\Common\Exception\ParseException;
+use Bolt\Common\Json;
 use Bolt\Controller\Backend\BackendBase;
 use Bolt\Controller\Zone;
 use Bolt\Extension\Bolt\Labels\Config;
@@ -109,8 +111,14 @@ class Backend extends BackendBase
         /** @var Labels $labels */
         $labels = $this->app['labels'];
         $arr = [];
-        $columns = array_map('mb_strtolower', json_decode($request->get('columns')));
-        $rows = json_decode($request->get('labels'));
+        try {
+            $columns = array_map('mb_strtolower', Json::parse($request->request->get('columns')));
+            $rows = Json::parse($request->request->get('labels'));
+        } catch (ParseException $e) {
+            $this->flashes()->error(sprintf('Unable to save labels: %s', $e->getMessage()));
+
+            return new RedirectResponse($this->generateUrl('labels'));
+        }
 
         // remove the label.
         array_shift($columns);
