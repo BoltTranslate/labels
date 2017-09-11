@@ -66,6 +66,7 @@ class LabelsExtension extends SimpleExtension
         return [
             'l'           => 'twigL',
             'setlanguage' => 'twigSetLanguage',
+            'getlanguage' => 'twigGetLanguage',
         ];
     }
 
@@ -212,6 +213,14 @@ class LabelsExtension extends SimpleExtension
 
         return '';
     }
+
+    /**
+     * @return string
+     */
+     public function twigGetLanguage()
+     {
+         return (string) $this->getCurrentLanguage();
+     }
 
     /**
      * {@inheritDoc}
