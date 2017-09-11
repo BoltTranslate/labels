@@ -37,18 +37,18 @@ see what's been changed.
 Permissions
 -----------
 
-To control which users can modify the labels, this extension uses Bolt's 
-built-in permission system. The labels configuration screen can not be accessed 
-by users without the `labels` permission. For any users other than those with 
-'root' roles, you'll need to add the permission to your `permissions.yml` file, 
-like this: 
+To control which users can modify the labels, this extension uses Bolt's
+built-in permission system. The labels configuration screen can not be accessed
+by users without the `labels` permission. For any users other than those with
+'root' roles, you'll need to add the permission to your `permissions.yml` file,
+like this:
 
 ```
-global: 
+global:
     …
-    labels: [ admin, developer, chief-editor ]   
+    labels: [ admin, developer, chief-editor ]
     …
-```    
+```
 
 Options for setting the language
 --------------------------------
@@ -56,13 +56,13 @@ This extensions uses the lang parameter that can be set in a number of ways:
 
  1. By passing it along in the request: `example.org?lang=nl`
  2. By using the host name: `nl.example.org`
- 3. By prefixing a route [as explained in the docs](https://docs.bolt.cm/howto/building-multilingual-websites#defining-routes): 
+ 3. By prefixing a route [as explained in the docs](https://docs.bolt.cm/howto/building-multilingual-websites#defining-routes):
     `example.org/nl/pages`
  4. By extracting a value from a given locale "nl_NL" and checking whether this
     is a defined value in the `languages` configuration
  5. By using the default from the configuration file
- 6. By simply overriding all of these and setting it in the header of your twig
-    template files: `{% set lang = 'de' %}`
+ 6. By simply overriding all of these and setting the language in your twig
+    template files: `{{ setlanguage('de') }}`
 
 Usage in templates
 ------------------
@@ -84,7 +84,12 @@ template.
 ..
 
 {{ l('click here') }} -> returns label in french.
+```
 
+Likewise, you can retrieve the current language:
+
+```
+{{ getlanguage() }}
 ```
 
 When working on a website, it's probably easiest to just create the templates,
@@ -133,6 +138,6 @@ Tip: To modify the output of labels, you can use `capitalize`, `lower` and
 
 Tip: Always keep a backup of the translation file. You never know what might
 happen, and if it (for some reason) gets corrupted, it will be good to have a
-recent backup available. By default the file is located at 
+recent backup available. By default the file is located at
 `app/config/extensions/labels.json`.
 
