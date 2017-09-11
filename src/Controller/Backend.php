@@ -4,40 +4,21 @@ namespace Bolt\Extension\Bolt\Labels\Controller;
 
 use Bolt\Asset\File\JavaScript;
 use Bolt\Asset\File\Stylesheet;
+use Bolt\Controller\Backend\BackendBase;
 use Bolt\Controller\Zone;
-use Bolt\Extension\Bolt\Labels\Config;
 use Bolt\Extension\Bolt\Labels\LabelsExtension;
-use Bolt\Library as Lib;
 use Silex\Application;
 use Silex\ControllerCollection;
-use Silex\ControllerProviderInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-class Backend implements ControllerProviderInterface
+class Backend extends BackendBase
 {
-    /** @var Config */
-    private $config;
-
-    /**
-     * Constructor.
-     *
-     * @param Config $config
-     */
-    public function __construct(Config $config)
-    {
-        $this->config = $config;
-    }
-
     /**
      * {@inheritdoc}
      */
-    public function connect(Application $app)
+    protected function addRoutes(ControllerCollection $ctr)
     {
-        /** @var $ctr ControllerCollection */
-        $ctr = $app['controllers_factory'];
         $ctr->value(Zone::KEY, Zone::BACKEND);
 
         $ctr->get('/', [$this, 'translations'])
@@ -54,7 +35,10 @@ class Backend implements ControllerProviderInterface
         return $ctr;
     }
 
-    public function before(Request $request, Application $app)
+    /**
+     * {@inheritdoc}
+     */
+    public function before(Request $request, Application $app, $roleRoute = null)
     {
         /** @var LabelsExtension $extension */
         $extension = $app['extensions']->get('Bolt/Labels');
@@ -68,24 +52,21 @@ class Backend implements ControllerProviderInterface
         $app['asset.queue.file']->add($handsonJs);
         $app['asset.queue.file']->add($underscoreJs);
 
-        $user   = $app['users']->getCurrentUser();
-        if ($app['permissions']->isAllowed('labels', $user)) {
-            return null;
-        }
-
-        /** @var UrlGeneratorInterface $generator */
-        $generator = $app['url_generator'];
-
-        return new RedirectResponse($generator->generate('dashboard'), Response::HTTP_SEE_OTHER);
+        return parent::before($request, $app, 'labels');
     }
 
-    public function translations(Application $app, Request $request)
+    /**
+     * View & edit label translations.
+     *
+     * @return mixed
+     */
+    public function translations()
     {
         $data = [];
-        $languages = array_map('strtoupper', $app['labels.config']->getLanguages());
+        $languages = array_map('strtoupper', $this->app['labels.config']->getLanguages());
 
         /** @var array $labels */
-        $labels = (array) $app['labels']->getLabels();
+        $labels = (array) $this->app['labels']->getLabels();
         ksort($labels);
         foreach ($labels as $label => $row) {
             $values = [];
@@ -100,36 +81,37 @@ class Backend implements ControllerProviderInterface
             'data'    => $data,
         ];
 
-        return $app['twig']->render('import_form.twig', $context);
+        /** @deprecated Should be updated to not use globals in Bolt 4 (i.e. templates need to use context.variable) */
+        return $this->render('import_form.twig', [], $context);
     }
 
     /**
      * Save JSON file.
      *
-     * @param Application $app
-     * @param Request     $request
+     * @param Request $request
      *
      * @return RedirectResponse
      */
-    public function save(Application $app, Request $request)
+    public function save(Request $request)
     {
+        $labels = $this->app['labels'];
         $arr = [];
         $columns = array_map('mb_strtolower', json_decode($request->get('columns')));
-        $labels = json_decode($request->get('labels'));
+        $rows = json_decode($request->get('labels'));
 
         // remove the label.
         array_shift($columns);
 
-        foreach ($labels as $labelrow) {
-            $key = $app['labels']->cleanLabel(array_shift($labelrow));
-            $values = array_combine($columns, $labelrow);
+        foreach ($rows as $row) {
+            $key = $labels->cleanLabel(array_shift($row));
+            $values = array_combine($columns, $row);
             if (!empty($key)) {
                 $arr[$key] = $values;
             }
         }
 
-        $app['labels']->saveLabels($arr);
+        $labels->saveLabels($arr);
 
-        return Lib::redirect('labels');
+        return new RedirectResponse($this->generateUrl('labels'));
     }
 }

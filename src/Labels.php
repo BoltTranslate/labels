@@ -3,9 +3,10 @@
 namespace Bolt\Extension\Bolt\Labels;
 
 use Bolt\Filesystem\Exception\FileNotFoundException;
+use Bolt\Filesystem\Exception\ParseException;
 use Bolt\Filesystem\FilesystemInterface;
-use Bolt\Helpers\Str;
 use Bolt\Filesystem\Handler\JsonFile;
+use Bolt\Helpers\Str;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -21,7 +22,7 @@ class Labels
     /** @var string */
     private $extBasePath;
     /** @var array */
-    private $loadedlabels = [];
+    private $loadedLabels;
 
     /**
      * Constructor.
@@ -44,58 +45,49 @@ class Labels
      */
     public function getLabels()
     {
-        if (!empty($this->loadedlabels)) {
-            return $this->loadedlabels;
+        if ($this->loadedLabels !== null) {
+            return $this->loadedLabels;
         }
 
         // Check that the user's JSON file exists, else copy in the default
         if (!$this->filesystemManager->has('config://extensions/labels.json')) {
             $distPath = $this->filesystemManager->getFile('extensions://' . $this->extBasePath)->getPath();
-            $this->filesystemManager->copy(
+            try {
+                $this->filesystemManager->copy(
                     'extensions://' . $distPath . '/files/labels.json',
                     'config://extensions/labels.json'
                 );
-            try {
             } catch (IOException $e) {
                 $this->session->getFlashBag()->set(
                     'error',
-                    'The labels file at <tt>app/config/extensions/labels.json</tt> does not exist, and can not be created. Changes can NOT be saved until you fix this.'
+                    'The labels file at <code>config://extensions/labels.json</code> does not exist, and can not be created. Changes can NOT be saved until you fix this.'
                 );
             }
+
+            return $this->loadedLabels = [];
         }
 
-        // Check the file is writable
-        try {
-            $this->filesystemManager->get('config://extensions/labels.json');
-        } catch (IOException $e) {
-            $this->session->getFlashBag()->set(
-                'error',
-                'The labels file at <tt>app/config/extensions/labels.json</tt> is not writable. Changes can NOT saved, until you fix this.'
-            );
-        }
+        /** @var JsonFile $jsonFile */
+        $jsonFile = $this->filesystemManager->getFile('config://extensions/labels.json');
 
         // Read the contents of the file
         try {
-            $finder = $this->filesystemManager
-                ->find()
-                ->files()
-                ->name('labels.json')
-                ->in($this->filesystemManager->getDir('config://extensions')->getFullPath())
-            ;
-
-            /** @var \Bolt\Filesystem\Handler\File $file */
-            foreach ($finder->files() as $file) {
-                $this->loadedlabels = json_decode($file->read(), true);
-                continue;
-            }
-        } catch (\Exception $e) {
+            $this->loadedLabels = $jsonFile->parse();
+        } catch (ParseException $e) {
+            $this->loadedLabels = [];
             $this->session->getFlashBag()->set(
                 'error',
                 sprintf('There was an issue loading the labels: %s', $e->getMessage())
             );
+        } catch (IOException $e) {
+            $this->loadedLabels = [];
+            $this->session->getFlashBag()->set(
+                'error',
+                'The labels file at <code>config://extensions/labels.json</code> is not readable. Changes can NOT saved, until you fix this.'
+            );
         }
 
-        return $this->loadedlabels;
+        return $this->loadedLabels;
     }
 
     /**
@@ -151,7 +143,7 @@ class Labels
         } catch (IOException $e) {
             $this->session->getFlashBag()->set(
                 'error',
-                'The labels file at <tt>../app/config/extensions/labels.json</tt> is not writable. Changes were NOT saved.'
+                'The labels file at <code>config://extensions/labels.json</code> is not writable. Changes were NOT saved.'
             );
         }
     }

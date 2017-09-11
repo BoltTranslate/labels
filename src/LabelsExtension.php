@@ -8,6 +8,7 @@ use Bolt\Menu\MenuEntry;
 use Bolt\Version;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
+use Twig\Markup;
 
 /**
  * Labels Extension for Bolt
@@ -17,7 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 class LabelsExtension extends SimpleExtension
 {
     /** @var string */
-    private $currentlanguage = null;
+    private $currentLanguage;
 
     protected function registerServices(Application $app)
     {
@@ -39,8 +40,8 @@ class LabelsExtension extends SimpleExtension
         );
 
         $app['labels.controller.backend'] = $app->share(
-            function ($app) {
-                return new Controller\Backend($app['labels.config']);
+            function () {
+                return new Controller\Backend();
             }
         );
 
@@ -120,26 +121,25 @@ class LabelsExtension extends SimpleExtension
      *
      * @param Request     $request
      * @param Application $app
-     *
-     * @return null
      */
     public function before(Request $request, Application $app)
     {
         if (!Zone::isFrontend($request)) {
-            return null;
+            return;
         }
 
         $lang = $request->query->get('lang');
+        $labels = $app['labels'];
 
-        if (!$lang && $app['labels']->isAllowedLanguage($this->extractLanguage($request->getHost()))) {
+        if (!$lang && $labels->isAllowedLanguage($this->extractLanguage($request->getHost()))) {
             $lang = $this->extractLanguage($request->getHost());
         }
 
-        if (!$lang && $app['labels']->isAllowedLanguage(substr($request->getRequestUri(), 1, 2))) {
+        if (!$lang && $labels->isAllowedLanguage(substr($request->getRequestUri(), 1, 2))) {
             $lang = substr($request->getRequestUri(), 1, 2);
         }
 
-        if (!$this->isValidLanguage($lang) && $app['labels']->isAllowedLanguage(substr($request->getLocale(), 0, 2))) {
+        if (!$this->isValidLanguage($lang) && $labels->isAllowedLanguage(substr($request->getLocale(), 0, 2))) {
             $lang = substr($request->getLocale(), 0, 2);
         }
 
@@ -161,22 +161,23 @@ class LabelsExtension extends SimpleExtension
      * @param string  $label
      * @param boolean $lang
      *
-     * @return \Twig_Markup
+     * @return Markup
      */
     public function twigL($label, $lang = false)
     {
         $app = $this->getContainer();
-        $label = $app['labels']->cleanLabel($label);
+        $config = $app['labels.config'];
+        $labels = $app['labels'];
+        $label = $labels->cleanLabel($label);
 
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
         }
 
-        $labels = $app['labels']->getLabels();
-        if (!empty($labels[$label][mb_strtolower($lang)])) {
-            $res = $labels[$label][mb_strtolower($lang)];
+        $savedLabels = $labels->getLabels();
+        if (!empty($savedLabels[$label][mb_strtolower($lang)])) {
+            $res = $savedLabels[$label][mb_strtolower($lang)];
         } else {
-            $app = $this->getContainer();
             // Only show marked labels for logged in users
             if ($app['users']->getCurrentUser()) {
                 $res = '<mark>' . $label . '</mark>';
@@ -185,19 +186,19 @@ class LabelsExtension extends SimpleExtension
             }
 
             // Perhaps use the fallback?
-            $default = mb_strtolower($app['labels.config']->getDefault());
-            if ($app['labels.config']->isUseFallback() && !empty($labels[$label][$default])
+            $default = mb_strtolower($config->getDefault());
+            if ($config->isUseFallback() && !empty($savedLabels[$label][$default])
             ) {
-                $res = $labels[$label][$default];
+                $res = $savedLabels[$label][$default];
             }
 
             // perhaps add it to the labels file?
-            if ($app['labels.config']->isAddMissing() && empty($labels[$label])) {
-                $app['labels']->addLabel($label);
+            if ($config->isAddMissing() && empty($savedLabels[$label])) {
+                $labels->addLabel($label);
             }
         }
 
-        return new \Twig_Markup($res, 'UTF-8');
+        return new Markup($res, 'UTF-8');
     }
 
     /**
@@ -238,15 +239,17 @@ class LabelsExtension extends SimpleExtension
         $matches = [];
         if (preg_match('/^([a-z]{2})\./', $lang, $matches)) {
             return $matches[1];
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
      * Validate a two-letter language code.
      *
      * @param string $lang
+     *
+     * @return int
      */
     private function isValidLanguage($lang)
     {
@@ -268,7 +271,7 @@ class LabelsExtension extends SimpleExtension
     private function setCurrentLanguage($lang)
     {
         if ($this->isValidLanguage($lang)) {
-            $this->currentlanguage = $lang;
+            $this->currentLanguage = $lang;
             $app = $this->getContainer();
             $app['twig']->addGlobal('lang', $lang);
         }
@@ -281,19 +284,17 @@ class LabelsExtension extends SimpleExtension
      */
     private function getCurrentLanguage()
     {
-        if (!empty($this->currentlanguage)) {
-            $lang = $this->currentlanguage;
+        if ($this->currentLanguage !== null) {
+            return $this->currentLanguage;
+        }
+        $app = $this->getContainer();
+        $twigGlobals = $app['twig']->getGlobals();
+        if (isset($twigGlobals['lang'])) {
+            $lang = $twigGlobals['lang'];
         } else {
-            $app = $this->getContainer();
-            $twigGlobals = $app['twig']->getGlobals();
-            if (isset($twigGlobals['lang'])) {
-                $lang = $twigGlobals['lang'];
-            } else {
-                $lang = null;
-            }
-            $this->currentlanguage = $lang;
+            $lang = null;
         }
 
-        return $lang;
+        return $this->currentLanguage = $lang;
     }
 }
