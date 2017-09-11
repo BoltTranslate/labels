@@ -274,18 +274,12 @@ class LabelsExtension extends SimpleExtension
      * Note: we're not changing the session value here, because we
      * don't want to persist this language override across requests.
      *
-     * We're using the Twig global 'lang' as our source of truth, this
-     * way we can change the current language from within a template by
-     * setting the lang variable.
-     *
      * @param string $lang
      */
     private function setCurrentLanguage($lang)
     {
         if ($this->isValidLanguage($lang)) {
             $this->currentLanguage = $lang;
-            $app = $this->getContainer();
-            $app['twig']->addGlobal('lang', $lang);
         }
     }
 
@@ -296,17 +290,6 @@ class LabelsExtension extends SimpleExtension
      */
     private function getCurrentLanguage()
     {
-        if ($this->currentLanguage !== null) {
-            return $this->currentLanguage;
-        }
-        $app = $this->getContainer();
-        $twigGlobals = $app['twig']->getGlobals();
-        if (isset($twigGlobals['lang'])) {
-            $lang = $twigGlobals['lang'];
-        } else {
-            $lang = null;
-        }
-
-        return $this->currentLanguage = $lang;
+        return $this->currentLanguage;
     }
 }
