@@ -4,8 +4,14 @@ namespace Bolt\Extension\Bolt\Labels\Controller;
 
 use Bolt\Asset\File\JavaScript;
 use Bolt\Asset\File\Stylesheet;
+use Bolt\Collection\Bag;
+use Bolt\Collection\MutableBag;
+use Bolt\Common\Exception\ParseException;
+use Bolt\Common\Json;
 use Bolt\Controller\Backend\BackendBase;
 use Bolt\Controller\Zone;
+use Bolt\Extension\Bolt\Labels\Config;
+use Bolt\Extension\Bolt\Labels\Labels;
 use Bolt\Extension\Bolt\Labels\LabelsExtension;
 use Silex\Application;
 use Silex\ControllerCollection;
@@ -62,22 +68,30 @@ class Backend extends BackendBase
      */
     public function translations()
     {
+        /** @var Labels $labels */
+        $labels = $this->app['labels'];
+        /** @var Config $config */
+        $config = $this->app['labels.config'];
+        $languages = $config->getLanguages()->mutable();
         $data = [];
-        $languages = array_map('strtoupper', $this->app['labels.config']->getLanguages());
 
-        /** @var array $labels */
-        $labels = (array) $this->app['labels']->getLabels();
-        ksort($labels);
-        foreach ($labels as $label => $row) {
-            $values = [];
-            foreach ($languages as $l) {
-                $values[] = isset($row[mb_strtolower($l)]) ? $row[mb_strtolower($l)] : '';
+        /** @var MutableBag $savedLabels */
+        $savedLabels = $labels->getLabels()->sortKeys();
+        foreach ($savedLabels->keys() as $label) {
+            // First column is the label itself
+            $values = [$label];
+            foreach ($languages as $lang) {
+                $values[] = $savedLabels->getPath("$label/$lang");
             }
-            $data[] = array_merge([$label], $values);
+            $data[] = $values;
         }
+        // Make column titles
+        $columns = $languages->map(function ($k, $v) { return strtoupper($v); });
+        // Add the primary column title
+        $columns->prepend('Label');
 
         $context = [
-            'columns' => array_merge(['Label'], $languages),
+            'columns' => $columns,
             'data'    => $data,
         ];
 
@@ -94,22 +108,29 @@ class Backend extends BackendBase
      */
     public function save(Request $request)
     {
+        /** @var Labels $labels */
         $labels = $this->app['labels'];
         $arr = [];
-        $columns = array_map('mb_strtolower', json_decode($request->get('columns')));
-        $rows = json_decode($request->get('labels'));
+        try {
+            $columns = array_map('mb_strtolower', Json::parse($request->request->get('columns')));
+            $rows = Json::parse($request->request->get('labels'));
+        } catch (ParseException $e) {
+            $this->flashes()->error(sprintf('Unable to save labels: %s', $e->getMessage()));
+
+            return new RedirectResponse($this->generateUrl('labels'));
+        }
 
         // remove the label.
         array_shift($columns);
 
         foreach ($rows as $row) {
             $key = $labels->cleanLabel(array_shift($row));
-            $values = array_combine($columns, $row);
-            if (!empty($key)) {
-                $arr[$key] = $values;
+            if ($key !== '') {
+                $arr[$key] = Bag::combine($columns, $row);
             }
         }
 
+        // Commit to the JSON file
         $labels->saveLabels($arr);
 
         return new RedirectResponse($this->generateUrl('labels'));

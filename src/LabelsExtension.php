@@ -167,39 +167,42 @@ class LabelsExtension extends SimpleExtension
     public function twigL($label, $lang = false)
     {
         $app = $this->getContainer();
+        /** @var Config $config */
         $config = $app['labels.config'];
+        /** @var Labels $labels */
         $labels = $app['labels'];
         $label = $labels->cleanLabel($label);
+        $lang = mb_strtolower($lang);
 
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
         }
-
         $savedLabels = $labels->getLabels();
-        if (!empty($savedLabels[$label][mb_strtolower($lang)])) {
-            $res = $savedLabels[$label][mb_strtolower($lang)];
-        } else {
-            // Only show marked labels for logged in users
-            if ($app['users']->getCurrentUser()) {
-                $res = '<mark>' . $label . '</mark>';
-            } else {
-                $res = $label;
-            }
+        $savedLabel = $savedLabels->getPath("$label/$lang");
 
-            // Perhaps use the fallback?
-            $default = mb_strtolower($config->getDefault());
-            if ($config->isUseFallback() && !empty($savedLabels[$label][$default])
-            ) {
-                $res = $savedLabels[$label][$default];
-            }
-
-            // perhaps add it to the labels file?
-            if ($config->isAddMissing() && empty($savedLabels[$label])) {
-                $labels->addLabel($label);
-            }
+        // If we've got a live one, send it packing!
+        if ($savedLabel !== null) {
+            return new Markup($savedLabel, 'UTF-8');
         }
 
-        return new Markup($res, 'UTF-8');
+        // If we're automatically saving new/missing labels, add it to the JSON file
+        if ($config->isAddMissing() && !$savedLabels->hasItem($label)) {
+            $labels->addLabel($label);
+        }
+
+        // Use the fallback if configured & exists
+        $defaultLang = mb_strtolower($config->getDefault());
+        $savedDefault = $savedLabels->getPath("$label/$defaultLang");
+        if ($config->isUseFallback() && $savedDefault !== null) {
+            $label = $savedDefault;
+        }
+
+        // Show marked labels for logged in users
+        if ($app['users']->getCurrentUser()) {
+            return new Markup('<mark>' . $label . '</mark>');
+        }
+
+        return new Markup($label, 'UTF-8');
     }
 
     /**
@@ -271,18 +274,12 @@ class LabelsExtension extends SimpleExtension
      * Note: we're not changing the session value here, because we
      * don't want to persist this language override across requests.
      *
-     * We're using the Twig global 'lang' as our source of truth, this
-     * way we can change the current language from within a template by
-     * setting the lang variable.
-     *
      * @param string $lang
      */
     private function setCurrentLanguage($lang)
     {
         if ($this->isValidLanguage($lang)) {
             $this->currentLanguage = $lang;
-            $app = $this->getContainer();
-            $app['twig']->addGlobal('lang', $lang);
         }
     }
 
@@ -293,17 +290,6 @@ class LabelsExtension extends SimpleExtension
      */
     private function getCurrentLanguage()
     {
-        if ($this->currentLanguage !== null) {
-            return $this->currentLanguage;
-        }
-        $app = $this->getContainer();
-        $twigGlobals = $app['twig']->getGlobals();
-        if (isset($twigGlobals['lang'])) {
-            $lang = $twigGlobals['lang'];
-        } else {
-            $lang = null;
-        }
-
-        return $this->currentLanguage = $lang;
+        return $this->currentLanguage;
     }
 }
