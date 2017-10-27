@@ -99,7 +99,7 @@ class LabelsExtension extends SimpleExtension
         }
 
         return [
-            MenuEntry::create('labels')
+            (new MenuEntry('labels'))
                 ->setRoute('labels')
                 ->setLabel('Label translations')
                 ->setIcon('fa:flag')
