@@ -182,7 +182,7 @@ class LabelsExtension extends SimpleExtension
         $savedLabel = $savedLabels->getPath("$label/$lang");
 
         // If we've got a live one, send it packing!
-        if ($savedLabel !== null) {
+        if (!empty($savedLabel)) {
             return new Markup($savedLabel, 'UTF-8');
         }
 
@@ -194,7 +194,7 @@ class LabelsExtension extends SimpleExtension
         // Use the fallback if configured & exists
         $defaultLang = mb_strtolower($config->getDefault());
         $savedDefault = $savedLabels->getPath("$label/$defaultLang");
-        if ($config->isUseFallback() && $savedDefault !== null) {
+        if ($config->isUseFallback() && !empty($savedDefault)) {
             $label = $savedDefault;
         }
 
