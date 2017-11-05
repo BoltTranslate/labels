@@ -200,7 +200,7 @@ class LabelsExtension extends SimpleExtension
 
         // Show marked labels for logged in users
         if ($app['users']->getCurrentUser()) {
-            return new Markup('<mark>' . $label . '</mark>');
+            return new Markup('<mark>' . $label . '</mark>', 'UTF-8');
         }
 
         return new Markup($label, 'UTF-8');
