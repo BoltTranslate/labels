@@ -173,7 +173,7 @@ class LabelsExtension extends SimpleExtension
         /** @var Labels $labels */
         $labels = $app['labels'];
         $label = $labels->cleanLabel($label);
-        $lang = mb_strtolower($lang);
+        $lang = mb_strtolower($lang) ?: $this->getCurrentLanguage() ?: mb_strtolower($config->getDefault());
 
         if (!$this->isValidLanguage($lang)) {
             $lang = $this->getCurrentLanguage();
