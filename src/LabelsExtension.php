@@ -173,11 +173,8 @@ class LabelsExtension extends SimpleExtension
         /** @var Labels $labels */
         $labels = $app['labels'];
         $label = $labels->cleanLabel($label);
-        $lang = mb_strtolower($lang);
+        $lang = $this->isValidLanguage($lang) ? mb_strtolower($lang) : $this->getCurrentLanguage();
 
-        if (!$this->isValidLanguage($lang)) {
-            $lang = $this->getCurrentLanguage();
-        }
         $savedLabels = $labels->getLabels();
         $savedLabel = $savedLabels->getPath("$label/$lang");
 
@@ -187,7 +184,7 @@ class LabelsExtension extends SimpleExtension
         }
 
         // If we're automatically saving new/missing labels, add it to the JSON file
-        if ($config->isAddMissing() && !$savedLabels->hasItem($label)) {
+        if ($config->isAddMissing() && $this->isValidLanguage($lang) && !$savedLabels->hasItem($label)) {
             $labels->addLabel($label);
         }
 
