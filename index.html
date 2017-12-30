@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Labels</title>
+
+        <link rel="stylesheet" href="/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/css/highlight.dark.css">
+        <link rel="stylesheet" href="/css/main.css">
+    </head>
+    <body>
+
+        <header class="navbar navbar-default navbar-fixed-top">
+
+            <a class="navbar-brand" href="/">
+                Labels
+                <small class="hidden-xs hidden-sm">
+                    A Bolt extension for translatable labels
+                </small>
+            </a>
+
+            
+        </header>
+
+        <main class="container">
+            <div class="row">
+
+                
+                <section id="content" class="col-sm-12">
+                    <h1 id="labels">Labels</h1>
+<p>This extension allows you to use translatable labels for your site. While it
+does not allow for fully multilingual sites, you can easily translate labels
+and short snippets of text to different languages.</p>
+<p>After installation, there will be a new menu-item to access the page where you
+can modify and mange the translations:</p>
+<p><img src="https://cloud.githubusercontent.com/assets/1833361/10665901/8cb062aa-78ce-11e5-8742-5b1a2e142b6a.png" alt="screen shot 2015-10-22 at 15 06 15" /></p>
+<p>If you go to that page, you'll be able to manage the translations in a
+spreadsheet-like grid:</p>
+<p><img src="https://cloud.githubusercontent.com/assets/1833361/10665902/8cb2345e-78ce-11e5-9203-031146dc0976.png" alt="screen shot 2015-10-22 at 15 06 31" /></p>
+<h2 id="configuration">Configuration</h2>
+<p>The configuration file is pretty self-explanatory. If you're upgrading from a
+previous version of this extension, please read the <code>config.yml.dist</code> file, to
+see what's been changed.</p>
+<p><strong>Options:</strong></p>
+<ul>
+<li><code>languages</code>: The array of supported languages. It's advisable to stick to
+two-letter language codes.</li>
+<li><code>default</code>: The default language to choose, if none is explicitly set using
+<code>lang</code> or <code>setlanguage</code> (see below).</li>
+<li><code>add_missing</code>: Whether or not to automatically add missing labels to the
+translation file.</li>
+<li><code>use_fallback</code>: Fallback to the 'default language', if the label is not
+defined in the selected language? If set to <code>false</code> the extension will
+return the untranslated label for display in the browser.</li>
+</ul>
+<h2 id="permissions">Permissions</h2>
+<p>To control which users can modify the labels, this extension uses Bolt's
+built-in permission system. The labels configuration screen can not be accessed
+by users without the <code>labels</code> permission. For any users other than those with
+'root' roles, you'll need to add the permission to your <code>permissions.yml</code> file,
+like this:</p>
+<pre><code>global:
+    …
+    labels: [ admin, developer, chief-editor ]
+    …</code></pre>
+<h2 id="options-for-setting-the-language">Options for setting the language</h2>
+<p>This extensions uses the lang parameter that can be set in a number of ways:</p>
+<ol>
+<li>By passing it along in the request: <code>example.org?lang=nl</code></li>
+<li>By using the host name: <code>nl.example.org</code></li>
+<li>By prefixing a route <a href="https://docs.bolt.cm/howto/building-multilingual-websites#defining-routes">as explained in the docs</a>:
+<code>example.org/nl/pages</code></li>
+<li>By extracting a value from a given locale &quot;nl_NL&quot; and checking whether this
+is a defined value in the <code>languages</code> configuration</li>
+<li>By using the default from the configuration file</li>
+<li>By simply overriding all of these and setting the language in your twig
+template files: <code>{{ setlanguage('de') }}</code></li>
+</ol>
+<h2 id="usage-in-templates">Usage in templates</h2>
+<p>Basic usage: <code>{{ l('click here') }}</code></p>
+<p>Note: it's advisable to keep the <em>labels</em> as well as the <em>language</em> names as
+lowercase. The actual translated labels are case sensitive, and will be used,
+as they are provided in the translation table.</p>
+<p>The label that is returned for output in the browser depends on the current
+language setting. You can pass this explitly, using: <code>{{ l('click here', 'nl') }}</code>, but it's usually preferable to set this once in the header of your
+template.</p>
+<pre><code>{{ setlanguage('fr') }}
+
+..
+
+{{ l('click here') }} -&gt; returns label in french.</code></pre>
+<p>Likewise, you can retrieve the current language:</p>
+<pre><code>{{ getlanguage() }}</code></pre>
+<p>When working on a website, it's probably easiest to just create the templates,
+adding <code>{{ l('foo') }}</code> tags where applicable. If the <code>add_missing</code> option in
+the config file is set, these will be added to the labels file automatically,
+once they've been encountered in the templates. This allows you to work on the
+templates, and then translate all of the labels at once.</p>
+<p>If you're working on a larger site, it might be advisable to use a namespace-
+like structure, to specify the context where a label is used. For example, this
+would lead to confusion:</p>
+<pre><code>&lt;p&gt;
+    To go to the frontpage, click &lt;a href='/'&gt;{{ l('home') }}&lt;/a&gt;.
+&lt;/p&gt;
+
+&lt;p&gt;
+    {{ l('home') }} is where the heart is.
+&lt;/p&gt;</code></pre>
+<p>These would be translated differently in most languages. As such, it's good to
+prefix them with a 'namespace' to make the context clear. There are no set pre-
+defined namespaces. Pick and choose whatever suits your project. For example:</p>
+<pre><code>&lt;p&gt;
+    To go to the frontpage, click &lt;a href='/'&gt;{{ l('navigation:home') }}&lt;/a&gt;.
+&lt;/p&gt;
+
+&lt;p&gt;
+    {{ l('text:home') }} is where the heart is.
+&lt;/p&gt;</code></pre>
+<p>Tip: To modify the output of labels, you can use <code>capitalize</code>, <code>lower</code> and
+<code>upper</code>. For example:</p>
+<pre><code>{{ l('hello') }} -&gt; hallo
+{{ l('hello')|capitalize }} -&gt; Hallo
+{{ l('hello')|lower }} -&gt; Hallo
+{{ l('hello')|upper }} -&gt; HALLO</code></pre>
+<p>Tip: Always keep a backup of the translation file. You never know what might
+happen, and if it (for some reason) gets corrupted, it will be good to have a
+recent backup available. By default the file is located at
+<code>app/config/extensions/labels.json</code>.</p>
+                </section>
+
+            </div>
+        </main>
+
+        <footer>
+            <div class="container">
+                <p class="text-muted">
+                    website generated with <a href="http://couscous.io" title="Markdown website generator">Couscous</a>
+                </p>
+            </div>
+        </footer>
+
+        <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+        <script src="//yastatic.net/highlightjs/8.2/highlight.min.js"></script>
+
+        <script>
+            $(function() {
+                $("section>h1").wrap('<div class="page-header" />');
+                // Syntax highlighting
+                hljs.initHighlightingOnLoad();
+            });
+        </script>
+
+    </body>
+</html>
