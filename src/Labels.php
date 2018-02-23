@@ -114,7 +114,7 @@ class Labels
         }
 
         $jsonArray = MutableBag::from($jsonArray);
-        if ($jsonArray->hasItem($label)) {
+        if ($jsonArray->has($label)) {
             // Quietly shake our head at whomever called us, and exit silently … To the pub!
             return;
         }
