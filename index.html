@@ -6,56 +6,31 @@
 
         <title>Labels</title>
 
+        <link rel="stylesheet" href="https://bolttranslate.github.io/labels/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://bolttranslate.github.io/labels/css/font-awesome.min.css">
+        <link rel="stylesheet" href="https://bolttranslate.github.io/labels/css/highlight.dark.css">
         <link rel="stylesheet" href="https://bolttranslate.github.io/labels/css/main.css">
-        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro:300,400,600,700" rel="stylesheet">
-        <script defer src="https://use.fontawesome.com/releases/v5.0.2/js/all.js"></script>
     </head>
     <body>
 
-        <div class="docs columns is-gapless is-desktop">
-            <aside class="docs__sidebar">
-                <div class="docs__sidebar--brand">
-                    <div class="brand">
-                        <a class="brand--text" href="https://bolttranslate.github.io/labels/">
-                            Labels
-                        </a>
-                    </div>
-                    <button class="button button-bars is-primary is-hidden-desktop">
-                        <span class="icon">
-                        <i class="fa fa-bars"></i>
-                        </span>
-                    </button>
-                    <button class="button button-search is-primary is-hidden-desktop">
-                        <span class="icon">
-                        <i class="fa fa-search"></i>
-                        </span>
-                    </button>
-                </div>
+        <header class="navbar navbar-default navbar-fixed-top">
+
+            <a class="navbar-brand" href="https://bolttranslate.github.io/labels/">
+                Labels
+                <small class="hidden-xs hidden-sm">
+                    A Bolt extension for translatable labels
+                </small>
+            </a>
+
+            
+        </header>
+
+        <main class="container">
+            <div class="row">
 
                 
-                
-                <div class="docs__sidebar--footer is-hidden-touch">
-                    <p class="text-muted">
-                        Generated with ease by: <br>
-                        <a href="http://couscous.io" title="Markdown website generator">Couscous</a> |
-                        <a href="https://github.com/bolt/Extension-docs-template" title="Bolt extension documentation template">Bolt template</a>.
-                    </p>
-                </div>
-            </aside>
-            <main class="docs__main">
-                <header class="docs__main--header">
-                    <div class="pagetitle">
-                        A Bolt extension for translatable labels
-                    </div>
-
-                                            <a href="https://github.com/bolttranslate/labels" class="is-hidden-touch">
-                            <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png">
-                        </a>
-                                    </header>
-
-                <div class="docs__main--body">
-                    <section id="content" class="content">
-                        <h1 id="labels">Labels</h1>
+                <section id="content" class="col-sm-12">
+                    <h1 id="labels">Labels</h1>
 <p>This extension allows you to use translatable labels for your site. While it
 does not allow for fully multilingual sites, you can easily translate labels
 and short snippets of text to different languages.</p>
@@ -87,7 +62,7 @@ built-in permission system. The labels configuration screen can not be accessed
 by users without the <code>labels</code> permission. For any users other than those with
 'root' roles, you'll need to add the permission to your <code>permissions.yml</code> file,
 like this:</p>
-<pre><code class="language-yaml">global:
+<pre><code>global:
     …
     labels: [ admin, developer, chief-editor ]
     …</code></pre>
@@ -112,13 +87,13 @@ as they are provided in the translation table.</p>
 <p>The label that is returned for output in the browser depends on the current
 language setting. You can pass this explitly, using: <code>{{ l('click here', 'nl') }}</code>, but it's usually preferable to set this once in the header of your
 template.</p>
-<pre><code class="language-twig">{{ setlanguage('fr') }}
+<pre><code>{{ setlanguage('fr') }}
 
 ..
 
 {{ l('click here') }} -&gt; returns label in french.</code></pre>
 <p>Likewise, you can retrieve the current language:</p>
-<pre><code class="language-twig">{{ getlanguage() }}</code></pre>
+<pre><code>{{ getlanguage() }}</code></pre>
 <p>When working on a website, it's probably easiest to just create the templates,
 adding <code>{{ l('foo') }}</code> tags where applicable. If the <code>add_missing</code> option in
 the config file is set, these will be added to the labels file automatically,
@@ -127,7 +102,7 @@ templates, and then translate all of the labels at once.</p>
 <p>If you're working on a larger site, it might be advisable to use a namespace-
 like structure, to specify the context where a label is used. For example, this
 would lead to confusion:</p>
-<pre><code class="language-twig">&lt;p&gt;
+<pre><code>&lt;p&gt;
     To go to the frontpage, click &lt;a href='/'&gt;{{ l('home') }}&lt;/a&gt;.
 &lt;/p&gt;
 
@@ -137,7 +112,7 @@ would lead to confusion:</p>
 <p>These would be translated differently in most languages. As such, it's good to
 prefix them with a 'namespace' to make the context clear. There are no set pre-
 defined namespaces. Pick and choose whatever suits your project. For example:</p>
-<pre><code class="language-twig">&lt;p&gt;
+<pre><code>&lt;p&gt;
     To go to the frontpage, click &lt;a href='/'&gt;{{ l('navigation:home') }}&lt;/a&gt;.
 &lt;/p&gt;
 
@@ -146,7 +121,7 @@ defined namespaces. Pick and choose whatever suits your project. For example:</p
 &lt;/p&gt;</code></pre>
 <p>Tip: To modify the output of labels, you can use <code>capitalize</code>, <code>lower</code> and
 <code>upper</code>. For example:</p>
-<pre><code class="language-twig">{{ l('hello') }} -&gt; hallo
+<pre><code>{{ l('hello') }} -&gt; hallo
 {{ l('hello')|capitalize }} -&gt; Hallo
 {{ l('hello')|lower }} -&gt; Hallo
 {{ l('hello')|upper }} -&gt; HALLO</code></pre>
@@ -154,26 +129,28 @@ defined namespaces. Pick and choose whatever suits your project. For example:</p
 happen, and if it (for some reason) gets corrupted, it will be good to have a
 recent backup available. By default the file is located at
 <code>app/config/extensions/labels.json</code>.</p>
-                    </section>
-                </div>
-            </main>
-        </div>
+                </section>
 
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+            </div>
+        </main>
+
+        <footer>
+            <div class="container">
+                <p class="text-muted">
+                    website generated with <a href="http://couscous.io" title="Markdown website generator">Couscous</a>
+                </p>
+            </div>
+        </footer>
+
+        <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+        <script src="//yastatic.net/highlightjs/8.2/highlight.min.js"></script>
 
         <script>
-        var tipuesearch_pages = [];
-        </script>
-        <script src="https://bolttranslate.github.io/labels/tipuesearch/tipuesearch_set.js"></script>
-        <script src="https://bolttranslate.github.io/labels/tipuesearch/tipuesearch.min.js"></script>
-        <script src="https://bolttranslate.github.io/labels/js/bundle.js"></script>
-        <script>
-            $(document).ready(function() {
-                $('#tipue_search_input').tipuesearch({
-                    'mode': 'live',
-                    'liveDescription': '#content',
-                    'liveContent': '#content'
-                });
+            $(function() {
+                $("section>h1").wrap('<div class="page-header" />');
+                // Syntax highlighting
+                hljs.initHighlightingOnLoad();
             });
         </script>
 
