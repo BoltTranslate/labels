@@ -2,8 +2,10 @@
 # See couscous.io for details.
 
 template:
-    url: https://github.com/CouscousPHP/Template-Light.git
-    index: index.md
+    # The following assumes you have a checkout of the template folder in ../couscous-template
+    directory: ../couscous-template/public
+    # url: https://github.com/bolt/Extension-docs-template
+    index: README.md
 
 include:
     - docs
@@ -13,3 +15,7 @@ baseUrl: https://bolttranslate.github.io/labels
 
 title: Labels
 subTitle: A Bolt extension for translatable labels
+github:
+    user: BoltTranslate
+    repo: labels
+    editlink: https://github.com/BoltTranslate/labels/edit/master/docs/

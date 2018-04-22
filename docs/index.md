@@ -43,7 +43,7 @@ by users without the `labels` permission. For any users other than those with
 'root' roles, you'll need to add the permission to your `permissions.yml` file,
 like this:
 
-```
+```yaml
 global:
     …
     labels: [ admin, developer, chief-editor ]
@@ -78,7 +78,7 @@ language setting. You can pass this explitly, using: `{{ l('click here', 'nl')
 }}`, but it's usually preferable to set this once in the header of your
 template.
 
-```
+```html
 {{ setlanguage('fr') }}
 
 ..
@@ -88,7 +88,7 @@ template.
 
 Likewise, you can retrieve the current language:
 
-```
+```html
 {{ getlanguage() }}
 ```
 
@@ -102,7 +102,7 @@ If you're working on a larger site, it might be advisable to use a namespace-
 like structure, to specify the context where a label is used. For example, this
 would lead to confusion:
 
-```
+```html
 <p>
     To go to the frontpage, click <a href='/'>{{ l('home') }}</a>.
 </p>
@@ -116,7 +116,7 @@ These would be translated differently in most languages. As such, it's good to
 prefix them with a 'namespace' to make the context clear. There are no set pre-
 defined namespaces. Pick and choose whatever suits your project. For example:
 
-```
+```html
 <p>
     To go to the frontpage, click <a href='/'>{{ l('navigation:home') }}</a>.
 </p>
@@ -129,7 +129,7 @@ defined namespaces. Pick and choose whatever suits your project. For example:
 Tip: To modify the output of labels, you can use `capitalize`, `lower` and
 `upper`. For example:
 
-```
+```html
 {{ l('hello') }} -> hallo
 {{ l('hello')|capitalize }} -> Hallo
 {{ l('hello')|lower }} -> Hallo
