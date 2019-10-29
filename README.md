@@ -11,4 +11,4 @@ It is recommended to use this extension in combination with the
 View the full documentation online: [Labels docs][docs].
 
 [docs]: https://bolttranslate.github.io/labels
-[translate]: https://bolttranslate.github.io/translate
+[translate]: https://bolttranslate.github.io/Translate
