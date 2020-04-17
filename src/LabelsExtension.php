@@ -184,7 +184,7 @@ class LabelsExtension extends SimpleExtension
         }
 
         // If we're automatically saving new/missing labels, add it to the JSON file
-        if ($config->isAddMissing() && $this->isValidLanguage($lang) && !$savedLabels->hasItem($label)) {
+        if ($config->isAddMissing() && $this->isValidLanguage($lang) && !$savedLabels->has($label)) {
             $labels->addLabel($label);
         }
 
